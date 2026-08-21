@@ -1,0 +1,9 @@
+{
+  "name": "Florilegium Officium",
+  "short_name": "Officium",
+  "description": "A mobile-first reader for the traditional Roman Divine Office.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070606",
+  "theme_color": "#070606"
+}
