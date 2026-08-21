@@ -20,7 +20,6 @@ const els = {
   versionSelect: document.querySelector("#versionSelect"),
   fontDown: document.querySelector("#fontDown"),
   fontUp: document.querySelector("#fontUp"),
-  dayHeadline: document.querySelector("#dayHeadline"),
   status: document.querySelector("#status"),
   officeContent: document.querySelector("#officeContent"),
 };
@@ -41,8 +40,7 @@ const state = {
 };
 
 function todayIso() {
-  const now = new Date();
-  return toIso(now);
+  return toIso(new Date());
 }
 
 function toIso(date) {
@@ -147,7 +145,6 @@ async function loadOffice(scrollTop = false) {
   renderDate();
   syncUrl();
   setStatus("Loading the Office…");
-  els.dayHeadline.innerHTML = "";
   els.officeContent.innerHTML = "";
 
   if (scrollTop) window.scrollTo({ top: 0, behavior: "auto" });
@@ -167,7 +164,6 @@ async function loadOffice(scrollTop = false) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
 
-    els.dayHeadline.innerHTML = cleanMarkup(data.headline);
     els.officeContent.innerHTML = cleanMarkup(data.html);
     setStatus("");
   } catch (error) {
