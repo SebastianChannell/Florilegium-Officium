@@ -1,0 +1,307 @@
+:root {
+  --bg: #070606;
+  --text: #f2efea;
+  --muted: #aaa29b;
+  --accent: #8451cf;
+  --rubric: #b86161;
+  --divider: #2b2727;
+  --reader-size: 18px;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+select { font: inherit; }
+
+button { -webkit-tap-highlight-color: transparent; }
+
+.app-shell {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 10px calc(24px + env(safe-area-inset-bottom));
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: 0 -10px;
+  padding: 10px 10px 8px;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--divider);
+}
+
+.brand {
+  margin-bottom: 5px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-align: center;
+}
+
+.date-nav {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  min-height: 52px;
+}
+
+.icon-button,
+.date-button,
+.font-controls button {
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.icon-button {
+  width: 44px;
+  height: 44px;
+  font-size: 31px;
+  line-height: 1;
+}
+
+.date-button {
+  padding: 2px 8px;
+  text-align: center;
+}
+
+.date-button span,
+.date-button strong {
+  display: block;
+}
+
+.date-button span {
+  margin-bottom: 1px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.date-button strong {
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.hour-nav {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding: 3px 0 7px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hour-nav::-webkit-scrollbar { display: none; }
+
+.hour-nav button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hour-nav button[aria-current="page"] {
+  background: #171313;
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.reader-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.version-control { min-width: 0; }
+
+.version-control select {
+  max-width: 220px;
+  padding: 7px 24px 7px 8px;
+  border: 1px solid var(--divider);
+  border-radius: 3px;
+  background: #100e0e;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.font-controls {
+  display: flex;
+  gap: 3px;
+}
+
+.font-controls button {
+  min-width: 40px;
+  min-height: 34px;
+  border: 1px solid var(--divider);
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+main { padding-top: 12px; }
+
+.status {
+  padding: 35px 0;
+  color: var(--muted);
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 16px;
+  text-align: center;
+}
+
+.status.error { color: var(--rubric); }
+
+.office-content {
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: var(--reader-size);
+  line-height: 1.48;
+}
+
+.office-content:empty { display: none; }
+
+.office-content table {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+  background: transparent !important;
+}
+
+.office-content tr,
+.office-content tbody { background: transparent !important; }
+
+.office-content td,
+.office-content th {
+  width: 50% !important;
+  max-width: 50% !important;
+  padding: 0 7px 8px !important;
+  border: 0 !important;
+  vertical-align: top !important;
+  background: transparent !important;
+  color: var(--text);
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.office-content td:first-child,
+.office-content th:first-child {
+  padding-left: 0 !important;
+  border-right: 1px solid var(--divider) !important;
+}
+
+.office-content td:last-child,
+.office-content th:last-child { padding-right: 0 !important; }
+
+.office-content font,
+.office-content span,
+.office-content div,
+.office-content p {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+.office-content font[color="red"],
+.office-content font[color="#ff0000"],
+.office-content font[color="#FF0000"],
+.office-content .red,
+.office-content [style*="color:red"],
+.office-content [style*="color: red"] {
+  color: var(--rubric) !important;
+}
+
+.office-content a {
+  color: var(--accent) !important;
+  text-decoration: none;
+}
+
+.office-content h1,
+.office-content h2,
+.office-content h3,
+.office-content h4 {
+  margin: 10px 0 8px;
+  color: var(--text);
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.office-content h1 { font-size: 1.35em; }
+.office-content h2 { font-size: 1.2em; }
+.office-content h3,
+.office-content h4 { font-size: 1.05em; }
+
+.office-content hr {
+  height: 1px;
+  margin: 12px 0;
+  border: 0;
+  background: var(--divider);
+}
+
+.office-content input,
+.office-content button,
+.office-content select,
+.office-content textarea,
+.office-content form { display: none !important; }
+
+footer {
+  margin-top: 26px;
+  padding-top: 12px;
+  border-top: 1px solid var(--divider);
+  color: #726c67;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (min-width: 700px) {
+  .app-shell { padding-left: 18px; padding-right: 18px; }
+  .topbar { margin-left: -18px; margin-right: -18px; padding-left: 18px; padding-right: 18px; }
+  .office-content td,
+  .office-content th { padding-left: 16px !important; padding-right: 16px !important; }
+}
