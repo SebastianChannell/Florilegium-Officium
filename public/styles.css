@@ -135,6 +135,33 @@ button { -webkit-tap-highlight-color: transparent; }
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 
+.matins-tools {
+  display: flex;
+  justify-content: center;
+  padding: 0 0 7px;
+}
+
+.matins-tools[hidden] { display: none; }
+
+.matins-tools button {
+  min-height: 34px;
+  padding: 7px 14px;
+  border: 1px solid var(--divider);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.matins-tools button[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
 .reader-controls {
   display: flex;
   align-items: center;
