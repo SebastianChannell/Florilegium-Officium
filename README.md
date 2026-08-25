@@ -37,6 +37,10 @@ After deployment, the frontend requests `/api/office`; the Pages Function fetche
 
 The proxy also contains one narrowly scoped data repair for older backend images containing a malformed St. Zephyrinus common reference. On 25 August at Vespers, it supplies the omitted bilingual commemoration only when Divinum Officium declares that commemoration in the heading but fails to render it in the prayer section. Because this is a Simplex commemoration, the suffrage remains and supplies the final conclusion, matching the official Divinum Officium output.
 
+## Automatic backend updates
+
+The scheduled `Update Divinum Officium backend` workflow follows the official `ghcr.io/divinumofficium/divinum-officium:master` image. Each update is first deployed to a zero-traffic candidate revision and tested across all supported rubrics. Production traffic moves only after the candidate passes. See [the one-time Google Cloud authorization guide](docs/automatic-updates.md).
+
 ## Design
 
 The interface is deliberately restrained and mobile first:
