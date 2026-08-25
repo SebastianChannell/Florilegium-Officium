@@ -42,6 +42,7 @@ The interface is deliberately restrained and mobile first:
 - dark background `#070606`
 - purple accent `#8451CF`
 - compact horizontal Hour navigation
+- Matins-only lessons view for spiritual reading without psalms, responsories, or prayers
 - previous/next day controls
 - persistent rubric selection
 - adjustable reader text size
