@@ -35,6 +35,8 @@ Cloudflare Pages automatically deploys the `functions/` directory as Pages Funct
 
 After deployment, the frontend requests `/api/office`; the Pages Function fetches the requested Hour from the Cloud Run Divinum Officium instance with `content=1`, keeping DO responsible for occurrence, concurrence, commemorations, octaves, psalmody, lessons, collects, and all other liturgical decisions.
 
+The proxy also contains one narrowly scoped data repair for the malformed St. Zephyrinus common reference in the upstream corpus. On 25 August at Vespers, it supplies the omitted bilingual commemoration only when Divinum Officium declares that commemoration in the heading but fails to render it in the prayer section. It also marks the suffrage omitted, matching Divino Afflatu's normal output when a saint is commemorated.
+
 ## Design
 
 The interface is deliberately restrained and mobile first:
