@@ -1,0 +1,150 @@
+name: Update Divinum Officium backend
+
+on:
+  schedule:
+    - cron: "17 10 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: divinum-officium-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  DO_IMAGE: ghcr.io/divinumofficium/divinum-officium:master
+  GCP_REGION: us-east1
+  GCP_SERVICE: divinum-officium
+  PRODUCTION_URL: https://divinum-officium-833566975684.us-east1.run.app
+
+jobs:
+  update:
+    name: Deploy and verify upstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out Florilegium Officium
+        uses: actions/checkout@v7
+
+      - name: Check required repository variables
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          for name in PROJECT_ID PROVIDER SERVICE_ACCOUNT; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required repository variable: $name" >&2
+              echo "See docs/automatic-updates.md for the one-time setup." >&2
+              exit 1
+            fi
+          done
+
+      - name: Read the current upstream commit
+        id: upstream
+        run: |
+          set -euo pipefail
+          upstream_sha="$(git ls-remote https://github.com/DivinumOfficium/divinum-officium.git refs/heads/master | awk '{print $1}')"
+          if ! printf '%s' "$upstream_sha" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "Could not resolve the Divinum Officium master commit." >&2
+            exit 1
+          fi
+          echo "sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${upstream_sha:0:12}" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Deploy a zero-traffic candidate
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          UPSTREAM_SHA: ${{ steps.upstream.outputs.short_sha }}
+        run: |
+          set -euo pipefail
+          gcloud run deploy "$GCP_SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --image "$DO_IMAGE" \
+            --no-traffic \
+            --tag do-candidate \
+            --update-labels "do-upstream=$UPSTREAM_SHA" \
+            --quiet
+
+      - name: Locate the candidate revision
+        id: candidate
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          candidate_url="$(
+            gcloud run services describe "$GCP_SERVICE" \
+              --project "$PROJECT_ID" \
+              --region "$GCP_REGION" \
+              --format=json |
+              node -e '
+                let input = "";
+                process.stdin.on("data", chunk => input += chunk);
+                process.stdin.on("end", () => {
+                  const service = JSON.parse(input);
+                  const candidate = service.status?.traffic?.find(item => item.tag === "do-candidate");
+                  if (candidate?.url && candidate?.revisionName) {
+                    process.stdout.write(`${candidate.url}\n${candidate.revisionName}`);
+                  }
+                });
+              '
+          )"
+          candidate_revision="$(printf '%s\n' "$candidate_url" | sed -n '2p')"
+          candidate_url="$(printf '%s\n' "$candidate_url" | sed -n '1p')"
+          if [ -z "$candidate_url" ] || [ -z "$candidate_revision" ]; then
+            echo "Cloud Run did not report the candidate URL and revision." >&2
+            exit 1
+          fi
+          echo "url=$candidate_url" >> "$GITHUB_OUTPUT"
+          echo "revision=$candidate_revision" >> "$GITHUB_OUTPUT"
+
+      - name: Test the candidate revision
+        env:
+          DO_BASE_URL: ${{ steps.candidate.outputs.url }}
+        run: ./scripts/smoke-test-do.sh
+
+      - name: Promote the verified revision
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          CANDIDATE_REVISION: ${{ steps.candidate.outputs.revision }}
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic "$GCP_SERVICE" \
+            --project "$PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --to-revisions "$CANDIDATE_REVISION=100" \
+            --quiet
+
+      - name: Verify production
+        env:
+          DO_BASE_URL: ${{ env.PRODUCTION_URL }}
+        run: ./scripts/smoke-test-do.sh
+
+      - name: Record the deployed upstream version
+        env:
+          UPSTREAM_SHA: ${{ steps.upstream.outputs.sha }}
+          CANDIDATE_URL: ${{ steps.candidate.outputs.url }}
+        run: |
+          {
+            echo "### Divinum Officium update complete"
+            echo
+            echo "- Upstream commit: \`$UPSTREAM_SHA\`"
+            echo "- Candidate tested: $CANDIDATE_URL"
+            echo "- Revision promoted: \`${{ steps.candidate.outputs.revision }}\`"
+            echo "- Production: $PRODUCTION_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
