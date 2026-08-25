@@ -17,10 +17,9 @@ test("adds the omitted bilingual commemoration to 25 August Vespers", () => {
   assert.match(corrected, /regem tuum, Pastor ætérne/);
   assert.match(corrected, /Commemoration of St\. Zephyrinus, Pope and Martyr/);
   assert.match(corrected, /ook forgivingly on thy flock, Eternal Shepherd/);
-  assert.match(corrected, /Suffragium\{omittitur\}/);
-  assert.match(corrected, /Suffrage\{omit\}/);
-  assert.doesNotMatch(corrected, /Full suffrage text/);
-  assert.equal((corrected.match(/Amen\.<br\/>/g) || []).length, 2);
+  assert.match(corrected, /Full suffrage text/);
+  assert.doesNotMatch(corrected, /Suffragium\{omittitur\}|Suffrage\{omit\}/);
+  assert.doesNotMatch(corrected, /Zephyrínum[\s\S]*Per Dóminum nostrum/);
   assert.ok(corrected.indexOf("Collect of St. Louis") < corrected.indexOf("Commemoratio S. Zephyrini"));
 });
 
