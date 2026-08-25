@@ -36,9 +36,7 @@ const ZEPHYRINUS_LATIN = `<br/>
 <FONT COLOR="red"><I>℟.</I></FONT> Et constituísti eum super ópera mánuum tuárum.<br/>
  <br/>
 <FONT SIZE="+2" COLOR="red"><B><I>O</I></B></FONT>rémus.<br/>
-<FONT SIZE="+2" COLOR="red"><B><I>G</I></B></FONT>regem tuum, Pastor ætérne, placátus inténde: et, per beátum Zephyrínum Mártyrem tuum atque Summum Pontíficem, perpétua protectióne custódi; quem totíus Ecclésiæ præstitísti esse pastórem.<br/>
-<FONT SIZE="+1" COLOR="red"><B><I>P</I></B></FONT>er Dóminum nostrum Jesum Christum, Fílium tuum: qui tecum vivit et regnat in unitáte Spíritus Sancti, Deus, per ómnia sǽcula sæculórum.<br/>
-<FONT COLOR="red"><I>℟.</I></FONT> Amen.<br/>`;
+<FONT SIZE="+2" COLOR="red"><B><I>G</I></B></FONT>regem tuum, Pastor ætérne, placátus inténde: et, per beátum Zephyrínum Mártyrem tuum atque Summum Pontíficem, perpétua protectióne custódi; quem totíus Ecclésiæ præstitísti esse pastórem.<br/>`;
 
 const ZEPHYRINUS_ENGLISH = `<br/>
 <FONT COLOR="red"><I>Commemoration of St. Zephyrinus, Pope and Martyr</I></FONT><br/>
@@ -48,31 +46,12 @@ const ZEPHYRINUS_ENGLISH = `<br/>
 <FONT COLOR="red"><I>℟.</I></FONT> And madest him to have dominion over the works of thy hands.<br/>
  <br/>
 <FONT SIZE="+2" COLOR="red"><B><I>L</I></B></FONT>et us pray.<br/>
-<FONT SIZE="+2" COLOR="red"><B><I>L</I></B></FONT>ook forgivingly on thy flock, Eternal Shepherd, and keep it in thy constant protection, by the intercession of blessed Zephyrinus thy Martyr and Sovereign Pontiff, whom thou didst constitute Shepherd of the whole Church.<br/>
-<FONT SIZE="+1" COLOR="red"><B><I>T</I></B></FONT>hrough Jesus Christ, thy Son our Lord, Who liveth and reigneth with thee, in the unity of the Holy Ghost, God, world without end.<br/>
-<FONT COLOR="red"><I>℟.</I></FONT> Amen.<br/>`;
-
-const OMITTED_SUFFRAGE = `<TR><TD VALIGN='TOP' WIDTH='50%' ID='Vespera10'><FONT SIZE='-1' >Suffragium{omittitur}</FONT><br/>
-</TD>
-<TD VALIGN='TOP' WIDTH='50%'><FONT SIZE='-1' >Suffrage{omit}</FONT><br/>
-</TD>
-</TR>`;
+<FONT SIZE="+2" COLOR="red"><B><I>L</I></B></FONT>ook forgivingly on thy flock, Eternal Shepherd, and keep it in thy constant protection, by the intercession of blessed Zephyrinus thy Martyr and Sovereign Pontiff, whom thou didst constitute Shepherd of the whole Church.<br/>`;
 
 function appendToCell(cell, addition) {
   const closingTag = cell.lastIndexOf("</TD>");
   if (closingTag < 0) return null;
   return `${cell.slice(0, closingTag)}${addition}\n${cell.slice(closingTag)}`;
-}
-
-function omitSuffrage(html) {
-  const suffrageMarker = html.indexOf("ID='Vespera10'");
-  if (suffrageMarker < 0) return html;
-
-  const rowStart = html.lastIndexOf("<TR><TD", suffrageMarker);
-  const rowEnd = html.indexOf("</TR>", suffrageMarker);
-  if (rowStart < 0 || rowEnd < 0) return html;
-
-  return `${html.slice(0, rowStart)}${OMITTED_SUFFRAGE}${html.slice(rowEnd + 5)}`;
 }
 
 export function correctKnownUpstreamDefects(html, { isoDate, hour }) {
@@ -101,8 +80,7 @@ export function correctKnownUpstreamDefects(html, { isoDate, hour }) {
   const correctedEnglish = appendToCell(englishCell, ZEPHYRINUS_ENGLISH);
   if (!correctedLatin || !correctedEnglish) return html;
 
-  const corrected = `${html.slice(0, rowStart)}${correctedLatin}${correctedEnglish}${html.slice(rowEnd + 5)}`;
-  return omitSuffrage(corrected);
+  return `${html.slice(0, rowStart)}${correctedLatin}${correctedEnglish}${html.slice(rowEnd + 5)}`;
 }
 
 export async function onRequestGet({ request }) {
