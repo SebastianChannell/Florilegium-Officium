@@ -116,7 +116,7 @@ jobs:
       - name: Test the candidate revision
         env:
           DO_BASE_URL: ${{ steps.candidate.outputs.url }}
-        run: ./scripts/smoke-test-do.sh
+        run: bash ./scripts/smoke-test-do.sh
 
       - name: Promote the verified revision
         env:
@@ -133,7 +133,7 @@ jobs:
       - name: Verify production
         env:
           DO_BASE_URL: ${{ env.PRODUCTION_URL }}
-        run: ./scripts/smoke-test-do.sh
+        run: bash ./scripts/smoke-test-do.sh
 
       - name: Record the deployed upstream version
         env:
