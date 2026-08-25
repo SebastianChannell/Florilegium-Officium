@@ -17,6 +17,8 @@ const els = {
   prevDay: document.querySelector("#prevDay"),
   nextDay: document.querySelector("#nextDay"),
   hourNav: document.querySelector("#hourNav"),
+  matinsTools: document.querySelector("#matinsTools"),
+  lessonsToggle: document.querySelector("#lessonsToggle"),
   versionSelect: document.querySelector("#versionSelect"),
   fontDown: document.querySelector("#fontDown"),
   fontUp: document.querySelector("#fontUp"),
@@ -36,6 +38,8 @@ const state = {
     ? params.get("version")
     : savedVersion,
   fontSize: Math.min(24, Math.max(15, savedSize)),
+  lessonsOnly: params.get("view") === "lessons",
+  rawHtml: "",
   controller: null,
 };
 
@@ -92,6 +96,7 @@ function renderHours() {
       state.hour = value;
       localStorage.setItem("officium.hour", value);
       renderHours();
+      renderMatinsTools();
       loadOffice(true);
     });
     els.hourNav.append(button);
@@ -105,7 +110,74 @@ function renderHours() {
   });
 }
 
-function cleanMarkup(markup) {
+function normalizedText(nodes) {
+  return nodes
+    .map((node) => node.textContent || "")
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function splitCellIntoLines(cell) {
+  const lines = [[]];
+  for (const node of cell.childNodes) {
+    if (node.nodeName === "BR") lines.push([]);
+    else lines.at(-1).push(node);
+  }
+  return lines;
+}
+
+function lessonOnlyCell(cell) {
+  const lines = splitCellIntoLines(cell);
+  const start = lines.findIndex((line) => /^(Lectio|Reading)\s+\d+\b/i.test(normalizedText(line)));
+  if (start < 0) return null;
+
+  let end = lines.findIndex(
+    (line, index) => index > start && /^℣\.\s*(Tu autem|But thou)\b/i.test(normalizedText(line)),
+  );
+  if (end < 0) end = lines.length;
+
+  const extracted = cell.cloneNode(false);
+  for (const [index, line] of lines.slice(start, end).entries()) {
+    for (const node of line) extracted.append(node.cloneNode(true));
+    if (index < end - start - 1) extracted.append(document.createElement("br"));
+  }
+  return extracted;
+}
+
+function extractMatinsLessons(doc) {
+  const lessonsTable = document.createElement("table");
+  const lessonsBody = document.createElement("tbody");
+  let lessonCount = 0;
+
+  for (const row of doc.querySelectorAll("table tr")) {
+    const cells = [...row.children].filter((node) => ["TD", "TH"].includes(node.nodeName));
+    const extractedCells = cells.map(lessonOnlyCell);
+    if (!extractedCells.some(Boolean)) continue;
+
+    const lessonRow = document.createElement("tr");
+    for (const cell of extractedCells) {
+      if (cell) lessonRow.append(cell);
+    }
+    lessonsBody.append(lessonRow);
+    lessonCount += 1;
+  }
+
+  if (!lessonCount) return;
+
+  lessonsTable.append(lessonsBody);
+  const dayHeading = doc.body.querySelector(":scope > p")?.cloneNode(true);
+  const hourHeading = doc.body.querySelector(":scope > h2")?.cloneNode(true);
+  doc.body.replaceChildren();
+  if (dayHeading) doc.body.append(dayHeading);
+  if (hourHeading) {
+    hourHeading.textContent = "Matins · Lessons";
+    doc.body.append(hourHeading);
+  }
+  doc.body.append(lessonsTable);
+}
+
+function cleanMarkup(markup, lessonsOnly = false) {
   if (!markup) return "";
   const doc = new DOMParser().parseFromString(markup, "text/html");
 
@@ -121,7 +193,23 @@ function cleanMarkup(markup) {
     if (!href.startsWith("#")) link.removeAttribute("href");
   });
 
+  if (lessonsOnly) extractMatinsLessons(doc);
+
   return doc.body.innerHTML;
+}
+
+function renderOfficeContent() {
+  els.officeContent.innerHTML = cleanMarkup(
+    state.rawHtml,
+    state.hour === "Matutinum" && state.lessonsOnly,
+  );
+}
+
+function renderMatinsTools() {
+  const isMatins = state.hour === "Matutinum";
+  els.matinsTools.hidden = !isMatins;
+  els.lessonsToggle.setAttribute("aria-pressed", String(isMatins && state.lessonsOnly));
+  els.lessonsToggle.textContent = state.lessonsOnly ? "Full Matins" : "Lessons only";
 }
 
 function syncUrl() {
@@ -129,6 +217,8 @@ function syncUrl() {
   url.searchParams.set("date", state.date);
   url.searchParams.set("hour", state.hour);
   url.searchParams.set("version", state.version);
+  if (state.hour === "Matutinum" && state.lessonsOnly) url.searchParams.set("view", "lessons");
+  else url.searchParams.delete("view");
   history.replaceState(null, "", url);
 }
 
@@ -145,6 +235,7 @@ async function loadOffice(scrollTop = false) {
   renderDate();
   syncUrl();
   setStatus("Loading the Office…");
+  state.rawHtml = "";
   els.officeContent.innerHTML = "";
 
   if (scrollTop) window.scrollTo({ top: 0, behavior: "auto" });
@@ -164,7 +255,8 @@ async function loadOffice(scrollTop = false) {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
 
-    els.officeContent.innerHTML = cleanMarkup(data.html);
+    state.rawHtml = data.html;
+    renderOfficeContent();
     setStatus("");
   } catch (error) {
     if (error.name === "AbortError") return;
@@ -196,6 +288,14 @@ els.versionSelect.addEventListener("change", () => {
   loadOffice(true);
 });
 
+els.lessonsToggle.addEventListener("click", () => {
+  state.lessonsOnly = !state.lessonsOnly;
+  renderMatinsTools();
+  syncUrl();
+  renderOfficeContent();
+  window.scrollTo({ top: 0, behavior: "auto" });
+});
+
 els.fontDown.addEventListener("click", () => {
   state.fontSize = Math.max(15, state.fontSize - 1);
   applyFontSize();
@@ -210,4 +310,5 @@ els.datePicker.value = state.date;
 els.versionSelect.value = state.version;
 applyFontSize();
 renderHours();
+renderMatinsTools();
 loadOffice();
