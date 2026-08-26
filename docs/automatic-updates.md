@@ -1,6 +1,6 @@
 # Automatic Divinum Officium updates
 
-The `Update Divinum Officium backend` workflow checks the official `master` image every day. It deploys the image to a zero-traffic Cloud Run candidate, tests all four supported rubrics, and promotes the candidate only after the tests pass.
+The `Update Divinum Officium backend` workflow checks the official `master` image every day at 12:17 a.m. and 12:17 p.m. Eastern time. It deploys the image to a zero-traffic Cloud Run candidate, tests all four supported rubrics, and promotes the candidate only after the tests pass.
 
 Google Cloud Run pins a deployed tag to a specific image digest. Merely using the `master` tag does not keep an existing revision current, so a new deployment must be requested whenever upstream changes.
 
