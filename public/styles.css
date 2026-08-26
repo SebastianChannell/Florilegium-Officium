@@ -48,6 +48,127 @@ button { -webkit-tap-highlight-color: transparent; }
   border-bottom: 1px solid var(--divider);
 }
 
+.florilegium-menu {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 20;
+}
+
+.florilegium-menu summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  min-height: 2rem;
+  padding: 0 0.58rem;
+  border: 1px solid var(--divider);
+  border-radius: 3px;
+  background: #100e0e;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  list-style: none;
+  text-transform: uppercase;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.florilegium-menu summary::-webkit-details-marker { display: none; }
+.florilegium-menu summary::marker { content: ""; }
+
+.florilegium-menu summary:hover,
+.florilegium-menu[open] > summary {
+  border-color: var(--accent);
+  background: #171313;
+  color: var(--text);
+}
+
+.florilegium-menu summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.florilegium-menu-chevron {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  transform: rotate(45deg) translate(-0.08rem, -0.08rem);
+  transition: transform 140ms ease;
+}
+
+.florilegium-menu[open] .florilegium-menu-chevron {
+  transform: rotate(225deg) translate(-0.02rem, -0.02rem);
+}
+
+.florilegium-menu nav {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 0;
+  width: min(18rem, calc(100vw - 20px));
+  max-height: calc(100dvh - 4rem);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+  background: #100e0e;
+  box-shadow: 0 13px 40px rgba(0, 0, 0, 0.48);
+  text-align: left;
+}
+
+.florilegium-menu nav p {
+  margin: 0;
+  padding: 8px 11px 10px;
+  border-bottom: 1px solid var(--divider);
+  color: var(--accent);
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.florilegium-menu nav a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 41px;
+  padding: 9px 11px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.florilegium-menu nav a + a { border-top: 1px solid var(--divider); }
+
+.florilegium-menu nav a:hover,
+.florilegium-menu nav a:focus-visible {
+  background: #171313;
+  color: var(--text);
+}
+
+.florilegium-menu nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.florilegium-menu nav a[aria-current="page"] {
+  color: var(--text);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.florilegium-menu nav a[aria-current="page"]::after {
+  color: var(--accent);
+  content: "Current";
+  font-size: 8px;
+  letter-spacing: 0.1em;
+}
+
 .brand {
   margin-bottom: 5px;
   color: var(--accent);
@@ -329,6 +450,7 @@ footer {
 @media (min-width: 700px) {
   .app-shell { padding-left: 18px; padding-right: 18px; }
   .topbar { margin-left: -18px; margin-right: -18px; padding-left: 18px; padding-right: 18px; }
+  .florilegium-menu { right: 18px; }
   .office-content td,
   .office-content th { padding-left: 16px !important; padding-right: 16px !important; }
 }
