@@ -39,7 +39,7 @@ The proxy also contains one narrowly scoped data repair for older backend images
 
 ## Automatic backend updates
 
-The scheduled `Update Divinum Officium backend` workflow follows the official `ghcr.io/divinumofficium/divinum-officium:master` image. Each update is first deployed to a zero-traffic candidate revision and tested across all supported rubrics. Production traffic moves only after the candidate passes. See [the one-time Google Cloud authorization guide](docs/automatic-updates.md).
+The scheduled `Update Divinum Officium backend` workflow checks the official `ghcr.io/divinumofficium/divinum-officium:master` image at 12:17 a.m. and 12:17 p.m. Eastern time. Each update is first deployed to a zero-traffic candidate revision and tested across all supported rubrics. Production traffic moves only after the candidate passes. See [the Google Cloud authorization and update guide](docs/automatic-updates.md).
 
 ## Design
 
