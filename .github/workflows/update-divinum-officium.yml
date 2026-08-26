@@ -2,7 +2,8 @@ name: Update Divinum Officium backend
 
 on:
   schedule:
-    - cron: "17 10 * * *"
+    - cron: "17 0,12 * * *"
+      timezone: "America/New_York"
   workflow_dispatch:
 
 concurrency:
