@@ -7,6 +7,8 @@ const VERSIONS = {
   "1960": "Rubrics 1960 - 1960",
 };
 
+const SECOND_LANGUAGES = new Set(["English", "Espanol"]);
+
 const HOURS = new Set([
   "Matutinum",
   "Laudes",
@@ -89,8 +91,9 @@ export async function onRequestGet({ request }) {
   const hour = incoming.searchParams.get("hour") || "Laudes";
   const isoDate = incoming.searchParams.get("date");
   const date = toDoDate(isoDate);
+  const language = incoming.searchParams.get("lang") || "English";
 
-  if (!version || !HOURS.has(hour) || !date) {
+  if (!version || !HOURS.has(hour) || !date || !SECOND_LANGUAGES.has(language)) {
     return Response.json({ error: "Invalid Office request." }, { status: 400 });
   }
 
@@ -99,7 +102,7 @@ export async function onRequestGet({ request }) {
   upstream.searchParams.set("date1", date);
   upstream.searchParams.set("version", version);
   upstream.searchParams.set("lang1", "Latin");
-  upstream.searchParams.set("lang2", "English");
+  upstream.searchParams.set("lang2", language);
   upstream.searchParams.set("votive", "Hodie");
   upstream.searchParams.set("dioecesis", "Generale");
   upstream.searchParams.set("testmode", "regular");
@@ -121,7 +124,9 @@ export async function onRequestGet({ request }) {
   }
 
   const upstreamHtml = await response.text();
-  const html = correctKnownUpstreamDefects(upstreamHtml, { isoDate, hour });
+  const html = language === "English"
+    ? correctKnownUpstreamDefects(upstreamHtml, { isoDate, hour })
+    : upstreamHtml;
   return Response.json(
     { html, source: upstream.toString() },
     {
