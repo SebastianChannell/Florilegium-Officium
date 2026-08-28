@@ -1,12 +1,12 @@
 const HOURS = [
-  ["Matutinum", "Matins"],
-  ["Laudes", "Lauds"],
-  ["Prima", "Prime"],
-  ["Tertia", "Terce"],
-  ["Sexta", "Sext"],
-  ["Nona", "None"],
-  ["Vesperae", "Vespers"],
-  ["Completorium", "Compline"],
+  ["Matutinum", "Matins", "Maitines"],
+  ["Laudes", "Lauds", "Laudes"],
+  ["Prima", "Prime", "Prima"],
+  ["Tertia", "Terce", "Tercia"],
+  ["Sexta", "Sext", "Sexta"],
+  ["Nona", "None", "Nona"],
+  ["Vesperae", "Vespers", "Vísperas"],
+  ["Completorium", "Compline", "Completas"],
 ];
 
 const els = {
@@ -20,6 +20,7 @@ const els = {
   matinsTools: document.querySelector("#matinsTools"),
   lessonsToggle: document.querySelector("#lessonsToggle"),
   versionSelect: document.querySelector("#versionSelect"),
+  languageSelect: document.querySelector("#languageSelect"),
   fontDown: document.querySelector("#fontDown"),
   fontUp: document.querySelector("#fontUp"),
   status: document.querySelector("#status"),
@@ -29,6 +30,7 @@ const els = {
 const params = new URLSearchParams(location.search);
 const savedVersion = localStorage.getItem("officium.version") || "1954";
 const savedHour = localStorage.getItem("officium.hour") || "Laudes";
+const savedLanguage = localStorage.getItem("officium.language") || "English";
 const savedSize = Number(localStorage.getItem("officium.fontSize")) || 18;
 
 const state = {
@@ -37,6 +39,9 @@ const state = {
   version: ["1939", "1954", "1955", "1960"].includes(params.get("version"))
     ? params.get("version")
     : savedVersion,
+  language: ["English", "Espanol"].includes(params.get("lang"))
+    ? params.get("lang")
+    : (["English", "Espanol"].includes(savedLanguage) ? savedLanguage : "English"),
   fontSize: Math.min(24, Math.max(15, savedSize)),
   lessonsOnly: params.get("view") === "lessons",
   rawHtml: "",
@@ -75,8 +80,9 @@ function shiftDate(amount) {
 
 function renderDate() {
   const date = localDate(state.date);
-  els.weekday.textContent = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
-  els.displayDate.textContent = new Intl.DateTimeFormat("en-US", {
+  const locale = state.language === "Espanol" ? "es" : "en-US";
+  els.weekday.textContent = new Intl.DateTimeFormat(locale, { weekday: "long" }).format(date);
+  els.displayDate.textContent = new Intl.DateTimeFormat(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -85,7 +91,8 @@ function renderDate() {
 
 function renderHours() {
   els.hourNav.replaceChildren();
-  for (const [value, label] of HOURS) {
+  for (const [value, englishLabel, spanishLabel] of HOURS) {
+    const label = state.language === "Espanol" ? spanishLabel : englishLabel;
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
@@ -129,7 +136,7 @@ function splitCellIntoLines(cell) {
 
 function lessonOnlyCell(cell) {
   const lines = splitCellIntoLines(cell);
-  const start = lines.findIndex((line) => /^(Lectio|Reading)\s+\d+\b/i.test(normalizedText(line)));
+  const start = lines.findIndex((line) => /^(Lectio|Reading|Lecci[oó]n)\s+\d+\b/i.test(normalizedText(line)));
   if (start < 0) return null;
 
   let end = lines.findIndex(
@@ -171,7 +178,7 @@ function extractMatinsLessons(doc) {
   doc.body.replaceChildren();
   if (dayHeading) doc.body.append(dayHeading);
   if (hourHeading) {
-    hourHeading.textContent = "Matins · Lessons";
+    hourHeading.textContent = state.language === "Espanol" ? "Maitines · Lecciones" : "Matins · Lessons";
     doc.body.append(hourHeading);
   }
   doc.body.append(lessonsTable);
@@ -209,7 +216,9 @@ function renderMatinsTools() {
   const isMatins = state.hour === "Matutinum";
   els.matinsTools.hidden = !isMatins;
   els.lessonsToggle.setAttribute("aria-pressed", String(isMatins && state.lessonsOnly));
-  els.lessonsToggle.textContent = state.lessonsOnly ? "Full Matins" : "Lessons only";
+  els.lessonsToggle.textContent = state.language === "Espanol"
+    ? (state.lessonsOnly ? "Maitines completos" : "Solo lecciones")
+    : (state.lessonsOnly ? "Full Matins" : "Lessons only");
 }
 
 function syncUrl() {
@@ -217,6 +226,7 @@ function syncUrl() {
   url.searchParams.set("date", state.date);
   url.searchParams.set("hour", state.hour);
   url.searchParams.set("version", state.version);
+  url.searchParams.set("lang", state.language);
   if (state.hour === "Matutinum" && state.lessonsOnly) url.searchParams.set("view", "lessons");
   else url.searchParams.delete("view");
   history.replaceState(null, "", url);
@@ -234,7 +244,7 @@ async function loadOffice(scrollTop = false) {
 
   renderDate();
   syncUrl();
-  setStatus("Loading the Office…");
+  setStatus(state.language === "Espanol" ? "Cargando el Oficio…" : "Loading the Office…");
   state.rawHtml = "";
   els.officeContent.innerHTML = "";
 
@@ -244,6 +254,7 @@ async function loadOffice(scrollTop = false) {
     date: state.date,
     hour: state.hour,
     version: state.version,
+    lang: state.language,
   });
 
   try {
@@ -261,7 +272,12 @@ async function loadOffice(scrollTop = false) {
   } catch (error) {
     if (error.name === "AbortError") return;
     console.error(error);
-    setStatus("The Office could not be loaded. Try again in a moment.", true);
+    setStatus(
+      state.language === "Espanol"
+        ? "No se pudo cargar el Oficio. Inténtalo de nuevo en un momento."
+        : "The Office could not be loaded. Try again in a moment.",
+      true,
+    );
   }
 }
 
@@ -288,6 +304,15 @@ els.versionSelect.addEventListener("change", () => {
   loadOffice(true);
 });
 
+els.languageSelect.addEventListener("change", () => {
+  state.language = els.languageSelect.value;
+  localStorage.setItem("officium.language", state.language);
+  renderDate();
+  renderHours();
+  renderMatinsTools();
+  loadOffice(true);
+});
+
 els.lessonsToggle.addEventListener("click", () => {
   state.lessonsOnly = !state.lessonsOnly;
   renderMatinsTools();
@@ -308,6 +333,7 @@ els.fontUp.addEventListener("click", () => {
 
 els.datePicker.value = state.date;
 els.versionSelect.value = state.version;
+els.languageSelect.value = state.language;
 applyFontSize();
 renderHours();
 renderMatinsTools();
