@@ -1,11 +1,24 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { correctKnownUpstreamDefects } from "../functions/api/office.js";
+import { correctKnownUpstreamDefects, resolveLanguageProfile } from "../functions/api/office.js";
 
 const heading = `<P><SPAN>Commemoratio:</SPAN> <FONT COLOR="red">S. Zephyrini Papæ et Martyris</FONT></P>`;
 const prayerRow = `<TR><TD ID='Vespera9'>Oratio<br/>Collect of St. Louis.<br/></TD><TD>Prayer<br/>Collect of St. Louis.<br/></TD></TR>`;
 const suffrageRow = `<TR><TD ID='Vespera10'>Suffragium<br/>Full suffrage text.</TD><TD>Suffrage<br/>Full suffrage text.</TD></TR>`;
+
+test("maps Cantilenae English to DO's GABC Latin and English columns", () => {
+  assert.deepEqual(resolveLanguageProfile("Cantilenae-English"), {
+    lang1: "Latin-gabc",
+    lang2: "English",
+  });
+});
+
+test("keeps the existing bilingual language profiles", () => {
+  assert.deepEqual(resolveLanguageProfile("English"), { lang1: "Latin", lang2: "English" });
+  assert.deepEqual(resolveLanguageProfile("Espanol"), { lang1: "Latin", lang2: "Espanol" });
+  assert.equal(resolveLanguageProfile("Unknown"), null);
+});
 
 test("adds the omitted bilingual commemoration to 25 August Vespers", () => {
   const corrected = correctKnownUpstreamDefects(`${heading}${prayerRow}${suffrageRow}`, {
