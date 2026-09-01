@@ -283,6 +283,51 @@ button { -webkit-tap-highlight-color: transparent; }
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 
+.supplementary-prayer-controls {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 0;
+  padding: 0 0 8px;
+  border: 0;
+}
+
+.supplementary-prayer-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.supplementary-prayer-controls input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 1px solid var(--muted);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.supplementary-prayer-controls input:checked {
+  border: 4px solid var(--accent);
+  background: var(--text);
+}
+
+.supplementary-prayer-controls input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.supplementary-prayer-controls label:has(input:checked) { color: var(--text); }
+
 .reader-controls {
   display: flex;
   align-items: center;
@@ -327,7 +372,8 @@ main { padding-top: 12px; }
 
 .status.error { color: var(--rubric); }
 
-.office-content {
+.office-content,
+.supplementary-prayer {
   overflow-wrap: anywhere;
   color: var(--text);
   font-family: "Iowan Old Style", Palatino, Georgia, serif;
@@ -337,7 +383,23 @@ main { padding-top: 12px; }
 
 .office-content:empty { display: none; }
 
-.office-content table {
+.supplementary-prayer {
+  margin: 0 0 18px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.supplementary-prayer[hidden] { display: none; }
+
+#postPrayer {
+  margin: 18px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--divider);
+  border-bottom: 0;
+}
+
+.office-content table,
+.supplementary-prayer table {
   width: 100% !important;
   max-width: none !important;
   margin: 0 !important;
@@ -348,10 +410,14 @@ main { padding-top: 12px; }
 }
 
 .office-content tr,
-.office-content tbody { background: transparent !important; }
+.office-content tbody,
+.supplementary-prayer tr,
+.supplementary-prayer tbody { background: transparent !important; }
 
 .office-content td,
-.office-content th {
+.office-content th,
+.supplementary-prayer td,
+.supplementary-prayer th {
   width: 50% !important;
   max-width: 50% !important;
   padding: 0 7px 8px !important;
@@ -365,13 +431,28 @@ main { padding-top: 12px; }
 }
 
 .office-content td:first-child,
-.office-content th:first-child {
+.office-content th:first-child,
+.supplementary-prayer td:first-child,
+.supplementary-prayer th:first-child {
   padding-left: 0 !important;
   border-right: 1px solid var(--divider) !important;
 }
 
 .office-content td:last-child,
-.office-content th:last-child { padding-right: 0 !important; }
+.office-content th:last-child,
+.supplementary-prayer td:last-child,
+.supplementary-prayer th:last-child { padding-right: 0 !important; }
+
+.supplementary-prayer h2 {
+  margin: 4px 0 12px;
+  color: var(--accent);
+  font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 1.08em;
+  font-weight: 500;
+  text-align: center;
+}
+
+.supplementary-prayer em { color: var(--rubric); }
 
 .office-content font,
 .office-content span,
@@ -470,4 +551,6 @@ footer {
   .florilegium-menu { right: 18px; }
   .office-content td,
   .office-content th { padding-left: 16px !important; padding-right: 16px !important; }
+  .supplementary-prayer td,
+  .supplementary-prayer th { padding-left: 16px !important; padding-right: 16px !important; }
 }
