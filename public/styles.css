@@ -225,6 +225,52 @@ button { -webkit-tap-highlight-color: transparent; }
   font-weight: 500;
 }
 
+.date-button-line {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.date-controls-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 160ms ease;
+}
+
+.date-button[aria-expanded="true"] .date-controls-chevron {
+  transform: rotate(225deg) translate(-2px, -2px);
+}
+
+.date-controls[hidden] { display: none; }
+
+.date-picker-control {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0 2px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.date-picker-control input {
+  min-height: 30px;
+  padding: 3px 7px;
+  border: 1px solid var(--divider);
+  border-radius: 3px;
+  color: var(--text);
+  background: #100e0e;
+  color-scheme: dark;
+  font: inherit;
+}
+
 .hour-nav {
   display: flex;
   gap: 2px;
