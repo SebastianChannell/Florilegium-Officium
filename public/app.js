@@ -9,6 +9,9 @@ const HOURS = [
   ["Completorium", "Compline", "Completas"],
 ];
 
+const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-English"]);
+const CHANT_LANGUAGE = "Cantilenae-English";
+
 const els = {
   weekday: document.querySelector("#weekday"),
   displayDate: document.querySelector("#displayDate"),
@@ -39,14 +42,17 @@ const state = {
   version: ["1939", "1954", "1955", "1960"].includes(params.get("version"))
     ? params.get("version")
     : savedVersion,
-  language: ["English", "Espanol"].includes(params.get("lang"))
+  language: LANGUAGES.has(params.get("lang"))
     ? params.get("lang")
-    : (["English", "Espanol"].includes(savedLanguage) ? savedLanguage : "English"),
+    : (LANGUAGES.has(savedLanguage) ? savedLanguage : "English"),
   fontSize: Math.min(24, Math.max(15, savedSize)),
   lessonsOnly: params.get("view") === "lessons",
   rawHtml: "",
   controller: null,
 };
+
+let chantLayouts = [];
+let chantResizeFrame = null;
 
 function todayIso() {
   return toIso(new Date());
@@ -205,11 +211,80 @@ function cleanMarkup(markup, lessonsOnly = false) {
   return doc.body.innerHTML;
 }
 
+function renderOneChant(layout, performLayout = false) {
+  const { context, score, container } = layout;
+  if (!container?.isConnected) return;
+
+  const layoutLines = () => {
+    if (!container.isConnected) return;
+    const width = Math.max(1, container.clientWidth);
+    score.layoutChantLines(context, width, () => {
+      if (container.isConnected) container.innerHTML = score.createSvg(context);
+    });
+  };
+
+  if (performLayout) score.performLayoutAsync(context, layoutLines);
+  else layoutLines();
+}
+
+function renderChants() {
+  chantLayouts = [];
+  const gabcSources = [...els.officeContent.querySelectorAll(".GABC")];
+  if (!gabcSources.length) return;
+
+  const exsurge = window.exsurge;
+  const getHeader = window.getHeader;
+  if (!exsurge || typeof getHeader !== "function") {
+    for (const gabcSource of gabcSources) {
+      gabcSource.hidden = true;
+      const chantContainer = document.getElementById(gabcSource.id.replace("GABC", "GCHANT"));
+      if (chantContainer) chantContainer.textContent = "Cantilenæ notation could not be rendered.";
+    }
+    return;
+  }
+
+  for (const gabcSource of gabcSources) {
+    const chantContainer = document.getElementById(gabcSource.id.replace("GABC", "GCHANT"));
+    if (!chantContainer) continue;
+
+    try {
+      const context = new exsurge.ChantContext();
+      context.lyricTextFont = "'Iowan Old Style', Palatino, Georgia, serif";
+      context.lyricTextSize *= 1.2;
+      context.spaceBetweenSystems = 0;
+      context.dropCapTextFont = context.lyricTextFont;
+      context.annotationTextFont = context.lyricTextFont;
+
+      const source = gabcSource.innerHTML.replace(/&gt;/g, ">").replace(/&lt;/g, "<");
+      const header = getHeader(gabcSource.innerHTML);
+      header["centering-scheme"] = "latin";
+      const mapping = exsurge.Gabc.createMappingsFromSource(context, source);
+      const useDropCap = header["initial-style"] !== "0";
+      const score = new exsurge.ChantScore(context, mapping, useDropCap);
+      if (useDropCap && header.annotation) {
+        score.annotation = new exsurge.Annotation(context, header.annotation);
+      }
+
+      gabcSource.hidden = true;
+      const layout = { context, score, container: chantContainer };
+      chantLayouts.push(layout);
+      renderOneChant(layout, true);
+    } catch (error) {
+      console.error("Unable to render Cantilenæ notation", error);
+      gabcSource.hidden = true;
+      chantContainer.textContent = "Cantilenæ notation could not be rendered.";
+    }
+  }
+}
+
 function renderOfficeContent() {
+  chantLayouts = [];
+  els.officeContent.classList.toggle("chant-mode", state.language === CHANT_LANGUAGE);
   els.officeContent.innerHTML = cleanMarkup(
     state.rawHtml,
     state.hour === "Matutinum" && state.lessonsOnly,
   );
+  if (state.language === CHANT_LANGUAGE) renderChants();
 }
 
 function renderMatinsTools() {
@@ -246,6 +321,7 @@ async function loadOffice(scrollTop = false) {
   syncUrl();
   setStatus(state.language === "Espanol" ? "Cargando el Oficio…" : "Loading the Office…");
   state.rawHtml = "";
+  chantLayouts = [];
   els.officeContent.innerHTML = "";
 
   if (scrollTop) window.scrollTo({ top: 0, behavior: "auto" });
@@ -329,6 +405,15 @@ els.fontDown.addEventListener("click", () => {
 els.fontUp.addEventListener("click", () => {
   state.fontSize = Math.min(24, state.fontSize + 1);
   applyFontSize();
+});
+
+window.addEventListener("resize", () => {
+  if (!chantLayouts.length) return;
+  if (chantResizeFrame) cancelAnimationFrame(chantResizeFrame);
+  chantResizeFrame = requestAnimationFrame(() => {
+    chantResizeFrame = null;
+    for (const layout of chantLayouts) renderOneChant(layout);
+  });
 });
 
 els.datePicker.value = state.date;
