@@ -46,6 +46,18 @@
         <button id="lessonsToggle" type="button" aria-pressed="false">Lessons only</button>
       </div>
 
+      <fieldset class="supplementary-prayer-controls" aria-label="Prayers before and after the Office">
+        <legend class="visually-hidden">Prayers before and after the Office</legend>
+        <label>
+          <input id="anteToggle" type="checkbox">
+          <span id="anteToggleLabel">Ante Officium</span>
+        </label>
+        <label>
+          <input id="postToggle" type="checkbox">
+          <span id="postToggleLabel">Post Officium</span>
+        </label>
+      </fieldset>
+
       <div class="reader-controls">
         <label class="version-control">
           <span class="visually-hidden">Second language</span>
@@ -73,7 +85,9 @@
 
     <main>
       <div id="status" class="status" role="status">Loading the Office…</div>
+      <section id="antePrayer" class="supplementary-prayer" aria-label="Prayer before the Divine Office" hidden></section>
       <article id="officeContent" class="office-content" aria-live="polite"></article>
+      <section id="postPrayer" class="supplementary-prayer" aria-label="Prayer after the Divine Office" hidden></section>
     </main>
 
     <footer>
