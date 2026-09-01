@@ -12,6 +12,45 @@ const HOURS = [
 const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-English"]);
 const CHANT_LANGUAGE = "Cantilenae-English";
 
+const SUPPLEMENTARY_PRAYERS = {
+  ante: {
+    title: { English: "Before the Divine Office", Espanol: "Antes del Oficio Divino" },
+    latin: [
+      "Apéri Dómine, os meum ad benedicéndum nomen sanctum tuum: munda quoque cor meum ab ómnibus vanis, pervérsis et aliénis cogitatiónibus; intelléctum illúmina, afféctum inflámma, ut digne, atténte ac devóte hoc Offícium recitáre váleam, et exaudíri mérear ante conspéctum divínæ Majestátis tuæ. Per Christum Dóminum nostrum. ℟. Amen.",
+      "Dómine, in unióne illíus divínæ intentiónis, qua ipse in terris laudes Deo persolvísti, has tibi Horas (vel hanc tibi Horam) persólvo.",
+    ],
+    English: [
+      "O Lord, open Thou my mouth that I may bless Thy Holy Name. Cleanse my heart from all vain, evil, and wandering thoughts; enlighten my understanding; kindle my affections, that I may pray to, and praise Thee with attention and devotion; and may worthily be heard before the presence of Thy Divine Majesty. Through Christ our Lord. Amen.",
+      "Lord, in union with that Divine Intention wherewith Thou didst Thyself praise God, while Thou wast on earth, I offer these Hours (or this Hour) unto Thee.",
+    ],
+    Espanol: [
+      "Abre, Señor, mi boca para bendecir tu santo nombre; limpia también mi corazón de todos los pensamientos vanos, perversos y ajenos; ilumina mi entendimiento, enciende mi afecto, para que pueda recitar digna, atenta y devotamente este Oficio, y merezca ser escuchado ante la presencia de tu divina Majestad. Por Cristo nuestro Señor. ℟. Amén.",
+      "Señor, en unión con aquella divina intención con la que tú mismo, mientras estabas en la tierra, tributaste alabanzas a Dios, te ofrezco estas Horas (o esta Hora).",
+    ],
+  },
+  post: {
+    title: { English: "After the Divine Office", Espanol: "Después del Oficio Divino" },
+    latin: [
+      "Sacrosánctæ et indivíduæ Trinitáti, crucifíxi Dómini nostri Jesu Christi humanitáti, beatíssimæ et gloriosíssimæ sempérque Vírginis Maríæ fœcúndæ integritáti, et ómnium Sanctórum universitáti sit sempitérna laus, honor, virtus et glória ab omni creatúra, nobísque remíssio ómnium peccatórum, per infiníta sǽcula sæculórum. ℟. Amen.",
+      "℣. Beáta víscera Maríæ Vírginis, quæ portavérunt ætérni Pátris Fílium.<br>℟. Et beáta úbera, quæ lactavérunt Christum Dóminum.<br>Pater noster.<br><br>Ave Maria.",
+      "<em>Pius X concessit indulgentiam 300 dierum semel in die lucrandam iis, qui Orationem sequentem post Orationem Sacrosanctæ recitaverint; indulgentiam vero plenariam semel in mense lucrandam iis, qui istam Orationem cotidie per mensem recitaverint (2 Dec. 1905).</em>",
+      "O clementíssime Jesu, grátias ago tibi ex toto corde meo. Propitius esto mihi vilíssimo peccatóri. Ego hanc actiónem óffero divíno Cordi tuo emendándam atque perficiéndam, ad laudem et glóriam sanctíssimi nóminis tui et beatíssimæ Matris tuæ, ad salútem ánimæ meæ totiúsque Ecclésiæ tuæ. Amen.",
+    ],
+    English: [
+      "To the Most Holy and Undivided Trinity, to the Manhood of our Lord Jesus Christ Crucified, to the fruitful Virginity of the most blessed and most glorious Mary, always a Virgin, and to the holiness of all the Saints be ascribed everlasting praise, honour, and glory, by all creatures, and to us be granted the forgiveness of all our sins, world without end. Amen.",
+      "℣. Blessed be the womb of the Virgin Mary which bore the Son of the Eternal Father.<br>℟. And blessed be the paps which gave suck to Christ our Lord.<br>Our Father…<br><br>Hail Mary…",
+      "<em>Pius X granted an indulgence of 300 days to be gained once a day by those who recite the following prayer after the prayer Sacrosanctæ; and a plenary indulgence once a month to be gained by those who recite this prayer daily throughout the month (2 Dec. 1905).</em>",
+      "O Most clement Jesus, I thank Thee with all my heart. Be propitious to me, a most vile sinner. I offer this action to Thy Divine Heart to be emended and perfected, to the praise and glory of Thy Most Holy Name and of Thy Most Blessed Mother, for the salvation of my soul and of Thy whole Church. Amen.",
+    ],
+    Espanol: [
+      "A la sacrosanta e indivisa Trinidad, a la humanidad de nuestro Señor Jesucristo crucificado, a la fecunda integridad de la beatísima y gloriosísima siempre Virgen María, y a la universalidad de todos los Santos, sean dadas por toda criatura alabanza, honor, poder y gloria sempiternos, y a nosotros el perdón de todos nuestros pecados, por los infinitos siglos de los siglos. Amén.",
+      "℣. Bienaventuradas las entrañas de la Virgen María, que llevaron al Hijo del Padre eterno.<br>℟. Y bienaventurados los pechos que amamantaron a Cristo nuestro Señor.<br>Padre nuestro…<br><br>Ave María…",
+      "<em>Pío X concedió una indulgencia de 300 días, que podía ganarse una vez al día, a quienes recitaran la siguiente oración después de la oración Sacrosanctæ; y una indulgencia plenaria una vez al mes a quienes recitaran esta oración todos los días durante el mes (2 dic. 1905).</em>",
+      "Oh clementísimo Jesús, te doy gracias de todo corazón. Sé propicio conmigo, vilísimo pecador. Ofrezco esta acción a tu divino Corazón para que sea corregida y perfeccionada, para alabanza y gloria de tu santísimo nombre y de tu beatísima Madre, para la salvación de mi alma y de toda tu Iglesia. Amén.",
+    ],
+  },
+};
+
 const els = {
   weekday: document.querySelector("#weekday"),
   displayDate: document.querySelector("#displayDate"),
@@ -22,6 +61,12 @@ const els = {
   hourNav: document.querySelector("#hourNav"),
   matinsTools: document.querySelector("#matinsTools"),
   lessonsToggle: document.querySelector("#lessonsToggle"),
+  anteToggle: document.querySelector("#anteToggle"),
+  postToggle: document.querySelector("#postToggle"),
+  anteToggleLabel: document.querySelector("#anteToggleLabel"),
+  postToggleLabel: document.querySelector("#postToggleLabel"),
+  antePrayer: document.querySelector("#antePrayer"),
+  postPrayer: document.querySelector("#postPrayer"),
   versionSelect: document.querySelector("#versionSelect"),
   languageSelect: document.querySelector("#languageSelect"),
   fontDown: document.querySelector("#fontDown"),
@@ -47,6 +92,8 @@ const state = {
     : (LANGUAGES.has(savedLanguage) ? savedLanguage : "English"),
   fontSize: Math.min(24, Math.max(15, savedSize)),
   lessonsOnly: params.get("view") === "lessons",
+  showAnte: localStorage.getItem("officium.showAnte") === "true",
+  showPost: localStorage.getItem("officium.showPost") === "true",
   rawHtml: "",
   controller: null,
 };
@@ -285,6 +332,27 @@ function renderOfficeContent() {
     state.hour === "Matutinum" && state.lessonsOnly,
   );
   if (state.language === CHANT_LANGUAGE) renderChants();
+  renderSupplementaryPrayers();
+}
+
+function supplementaryPrayerMarkup(prayer) {
+  const language = state.language === "Espanol" ? "Espanol" : "English";
+  const rows = prayer.latin.map((latin, index) => `
+    <tr><td>${latin}</td><td>${prayer[language][index]}</td></tr>
+  `).join("");
+  return `<h2>${prayer.title[language]}</h2><table><tbody>${rows}</tbody></table>`;
+}
+
+function renderSupplementaryPrayers() {
+  const spanish = state.language === "Espanol";
+  els.anteToggleLabel.textContent = spanish ? "Ante Officium · Antes" : "Ante Officium";
+  els.postToggleLabel.textContent = spanish ? "Post Officium · Después" : "Post Officium";
+  els.anteToggle.checked = state.showAnte;
+  els.postToggle.checked = state.showPost;
+  els.antePrayer.hidden = !state.showAnte;
+  els.postPrayer.hidden = !state.showPost;
+  els.antePrayer.innerHTML = state.showAnte ? supplementaryPrayerMarkup(SUPPLEMENTARY_PRAYERS.ante) : "";
+  els.postPrayer.innerHTML = state.showPost ? supplementaryPrayerMarkup(SUPPLEMENTARY_PRAYERS.post) : "";
 }
 
 function renderMatinsTools() {
@@ -397,6 +465,18 @@ els.lessonsToggle.addEventListener("click", () => {
   window.scrollTo({ top: 0, behavior: "auto" });
 });
 
+els.anteToggle.addEventListener("change", () => {
+  state.showAnte = els.anteToggle.checked;
+  localStorage.setItem("officium.showAnte", String(state.showAnte));
+  renderSupplementaryPrayers();
+});
+
+els.postToggle.addEventListener("change", () => {
+  state.showPost = els.postToggle.checked;
+  localStorage.setItem("officium.showPost", String(state.showPost));
+  renderSupplementaryPrayers();
+});
+
 els.fontDown.addEventListener("click", () => {
   state.fontSize = Math.max(15, state.fontSize - 1);
   applyFontSize();
@@ -422,4 +502,5 @@ els.languageSelect.value = state.language;
 applyFontSize();
 renderHours();
 renderMatinsTools();
+renderSupplementaryPrayers();
 loadOffice();
