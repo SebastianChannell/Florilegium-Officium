@@ -7,7 +7,11 @@ const VERSIONS = {
   "1960": "Rubrics 1960 - 1960",
 };
 
-const SECOND_LANGUAGES = new Set(["English", "Espanol"]);
+const LANGUAGE_PROFILES = new Map([
+  ["English", { lang1: "Latin", lang2: "English" }],
+  ["Espanol", { lang1: "Latin", lang2: "Espanol" }],
+  ["Cantilenae-English", { lang1: "Latin-gabc", lang2: "English" }],
+]);
 
 const HOURS = new Set([
   "Matutinum",
@@ -25,6 +29,10 @@ function toDoDate(value) {
   if (!match) return null;
   const [, year, month, day] = match;
   return `${Number(month)}-${Number(day)}-${year}`;
+}
+
+export function resolveLanguageProfile(language) {
+  return LANGUAGE_PROFILES.get(language) || null;
 }
 
 const ZEPHYRINUS_HEADING = /Commemoratio:<\/SPAN>\s*<FONT[^>]*>S\. Zephyrini Papæ et Martyris<\/FONT>/i;
@@ -92,8 +100,9 @@ export async function onRequestGet({ request }) {
   const isoDate = incoming.searchParams.get("date");
   const date = toDoDate(isoDate);
   const language = incoming.searchParams.get("lang") || "English";
+  const languageProfile = resolveLanguageProfile(language);
 
-  if (!version || !HOURS.has(hour) || !date || !SECOND_LANGUAGES.has(language)) {
+  if (!version || !HOURS.has(hour) || !date || !languageProfile) {
     return Response.json({ error: "Invalid Office request." }, { status: 400 });
   }
 
@@ -101,8 +110,8 @@ export async function onRequestGet({ request }) {
   upstream.searchParams.set("command", `pray${hour}`);
   upstream.searchParams.set("date1", date);
   upstream.searchParams.set("version", version);
-  upstream.searchParams.set("lang1", "Latin");
-  upstream.searchParams.set("lang2", language);
+  upstream.searchParams.set("lang1", languageProfile.lang1);
+  upstream.searchParams.set("lang2", languageProfile.lang2);
   upstream.searchParams.set("votive", "Hodie");
   upstream.searchParams.set("dioecesis", "Generale");
   upstream.searchParams.set("testmode", "regular");
