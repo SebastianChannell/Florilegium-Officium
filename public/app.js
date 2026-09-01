@@ -55,6 +55,7 @@ const els = {
   weekday: document.querySelector("#weekday"),
   displayDate: document.querySelector("#displayDate"),
   dateButton: document.querySelector("#dateButton"),
+  dateControls: document.querySelector("#dateControls"),
   datePicker: document.querySelector("#datePicker"),
   prevDay: document.querySelector("#prevDay"),
   nextDay: document.querySelector("#nextDay"),
@@ -80,6 +81,7 @@ const savedVersion = localStorage.getItem("officium.version") || "1954";
 const savedHour = localStorage.getItem("officium.hour") || "Laudes";
 const savedLanguage = localStorage.getItem("officium.language") || "English";
 const savedSize = Number(localStorage.getItem("officium.fontSize")) || 18;
+const savedDateControlsExpanded = localStorage.getItem("officium.dateControlsExpanded") !== "false";
 
 const state = {
   date: validIsoDate(params.get("date")) ? params.get("date") : todayIso(),
@@ -430,11 +432,16 @@ function applyFontSize() {
   localStorage.setItem("officium.fontSize", String(state.fontSize));
 }
 
+function setDateControlsExpanded(expanded) {
+  els.dateButton.setAttribute("aria-expanded", String(expanded));
+  els.dateControls.hidden = !expanded;
+  localStorage.setItem("officium.dateControlsExpanded", String(expanded));
+}
+
 els.prevDay.addEventListener("click", () => shiftDate(-1));
 els.nextDay.addEventListener("click", () => shiftDate(1));
 els.dateButton.addEventListener("click", () => {
-  if (typeof els.datePicker.showPicker === "function") els.datePicker.showPicker();
-  else els.datePicker.click();
+  setDateControlsExpanded(els.dateButton.getAttribute("aria-expanded") !== "true");
 });
 els.datePicker.addEventListener("change", () => {
   if (!validIsoDate(els.datePicker.value)) return;
@@ -499,6 +506,7 @@ window.addEventListener("resize", () => {
 els.datePicker.value = state.date;
 els.versionSelect.value = state.version;
 els.languageSelect.value = state.language;
+setDateControlsExpanded(savedDateControlsExpanded);
 applyFontSize();
 renderHours();
 renderMatinsTools();
