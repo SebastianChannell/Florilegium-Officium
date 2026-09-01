@@ -375,16 +375,21 @@ button { -webkit-tap-highlight-color: transparent; }
 .supplementary-prayer-controls label:has(input:checked) { color: var(--text); }
 
 .reader-controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
 }
 
-.version-control { min-width: 0; }
+.version-control {
+  display: block;
+  min-width: 0;
+}
 
 .version-control select {
-  max-width: 220px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
   padding: 7px 24px 7px 8px;
   border: 1px solid var(--divider);
   border-radius: 3px;
@@ -394,12 +399,13 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 
 .font-controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 40px);
   gap: 3px;
 }
 
 .font-controls button {
-  min-width: 40px;
+  width: 40px;
   min-height: 34px;
   border: 1px solid var(--divider);
   border-radius: 3px;
