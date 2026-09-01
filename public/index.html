@@ -32,53 +32,62 @@
       <div class="brand">OFFICIUM</div>
       <div class="date-nav" aria-label="Date navigation">
         <button id="prevDay" class="icon-button" type="button" aria-label="Previous day">‹</button>
-        <button id="dateButton" class="date-button" type="button">
+        <button id="dateButton" class="date-button" type="button" aria-expanded="true" aria-controls="dateControls">
           <span id="weekday"></span>
-          <strong id="displayDate"></strong>
+          <span class="date-button-line">
+            <strong id="displayDate"></strong>
+            <span class="date-controls-chevron" aria-hidden="true"></span>
+          </span>
         </button>
         <button id="nextDay" class="icon-button" type="button" aria-label="Next day">›</button>
-        <input id="datePicker" class="visually-hidden" type="date" aria-label="Choose date">
       </div>
 
-      <nav id="hourNav" class="hour-nav" aria-label="Canonical hours"></nav>
+      <div id="dateControls" class="date-controls">
+        <label class="date-picker-control">
+          <span>Choose date</span>
+          <input id="datePicker" type="date" aria-label="Choose date">
+        </label>
 
-      <div id="matinsTools" class="matins-tools" hidden>
-        <button id="lessonsToggle" type="button" aria-pressed="false">Lessons only</button>
-      </div>
+        <nav id="hourNav" class="hour-nav" aria-label="Canonical hours"></nav>
 
-      <fieldset class="supplementary-prayer-controls" aria-label="Prayers before and after the Office">
-        <legend class="visually-hidden">Prayers before and after the Office</legend>
-        <label>
-          <input id="anteToggle" type="checkbox">
-          <span id="anteToggleLabel">Ante Officium</span>
-        </label>
-        <label>
-          <input id="postToggle" type="checkbox">
-          <span id="postToggleLabel">Post Officium</span>
-        </label>
-      </fieldset>
+        <div id="matinsTools" class="matins-tools" hidden>
+          <button id="lessonsToggle" type="button" aria-pressed="false">Lessons only</button>
+        </div>
 
-      <div class="reader-controls">
-        <label class="version-control">
-          <span class="visually-hidden">Second language</span>
-          <select id="languageSelect" aria-label="Second language">
-            <option value="English">Latin · English</option>
-            <option value="Cantilenae-English">Cantilenæ · English</option>
-            <option value="Espanol">Latín · Español</option>
-          </select>
-        </label>
-        <label class="version-control">
-          <span class="visually-hidden">Rubrics</span>
-          <select id="versionSelect" aria-label="Rubrics">
-            <option value="1939">Divino Afflatu · 1939</option>
-            <option value="1954">Divino Afflatu · 1954</option>
-            <option value="1955">Reduced · 1955</option>
-            <option value="1960">Rubrics · 1960</option>
-          </select>
-        </label>
-        <div class="font-controls" aria-label="Text size">
-          <button id="fontDown" type="button" aria-label="Decrease text size">A−</button>
-          <button id="fontUp" type="button" aria-label="Increase text size">A+</button>
+        <fieldset class="supplementary-prayer-controls" aria-label="Prayers before and after the Office">
+          <legend class="visually-hidden">Prayers before and after the Office</legend>
+          <label>
+            <input id="anteToggle" type="checkbox">
+            <span id="anteToggleLabel">Ante Officium</span>
+          </label>
+          <label>
+            <input id="postToggle" type="checkbox">
+            <span id="postToggleLabel">Post Officium</span>
+          </label>
+        </fieldset>
+
+        <div class="reader-controls">
+          <label class="version-control">
+            <span class="visually-hidden">Second language</span>
+            <select id="languageSelect" aria-label="Second language">
+              <option value="English">Latin · English</option>
+              <option value="Cantilenae-English">Cantilenæ · English</option>
+              <option value="Espanol">Latín · Español</option>
+            </select>
+          </label>
+          <label class="version-control">
+            <span class="visually-hidden">Rubrics</span>
+            <select id="versionSelect" aria-label="Rubrics">
+              <option value="1939">Divino Afflatu · 1939</option>
+              <option value="1954">Divino Afflatu · 1954</option>
+              <option value="1955">Reduced · 1955</option>
+              <option value="1960">Rubrics · 1960</option>
+            </select>
+          </label>
+          <div class="font-controls" aria-label="Text size">
+            <button id="fontDown" type="button" aria-label="Decrease text size">A−</button>
+            <button id="fontUp" type="button" aria-label="Increase text size">A+</button>
+          </div>
         </div>
       </div>
     </header>
