@@ -425,6 +425,23 @@ main { padding-top: 12px; }
 .office-content textarea,
 .office-content form { display: none !important; }
 
+.office-content .GABC { display: none !important; }
+
+.office-content .GCHANT {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.office-content .GCHANT svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  filter: invert(1);
+  opacity: 0.94;
+}
+
 footer {
   margin-top: 26px;
   padding-top: 12px;
