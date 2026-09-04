@@ -3,7 +3,9 @@
 
   const CHANT_LANGUAGE = "Cantilenae-English";
   const HALF_VERSE = '<v>\\greheightstar</v>(:)';
+  const HALF_VERSE_PATTERN = /(?:<v>\\greheightstar<\/v>|\*)\(:\)/i;
   const PSALM_HEADER = /(?:^|\n)user-notes:\s*Psalm\b/im;
+  const PSALM_NAME = /(?:^|\n)name:\s*\d[^;\n]*;/im;
   const HEADER_END = "%%";
   const MUSICAL_GROUP = /^([a-mA-M][a-zA-Z0-9+~<>/\\\-.'`]*)(?:\[[^\]]*\])?$/;
 
@@ -63,15 +65,15 @@
       .replace(/^\s*(?:Psalm\s+\d+[.:]?\s*)/i, "")
       .replace(/^\s*\d{1,3}:\d+[a-z]?\s+/i, "")
       .replace(/^\s*\d+[a-z]?[.)]\s+/i, "")
-      .replace(/^\s*(?:V\/?\.|R\/?\.|℣\.|℟\.)\s*/i, "")
+      .replace(/^\s*[℣℟][.]?\s*/u, "")
       .replace(/\s+/g, " ")
       .trim();
   }
 
-  function englishPsalmLines(cell, expectedCount) {
-    if (!cell || expectedCount < 1) return null;
+  function englishPsalmLines(text, expectedCount) {
+    if (!text || expectedCount < 1) return null;
 
-    const lines = (cell.innerText || cell.textContent || "")
+    const lines = text
       .split(/\n+/)
       .map(cleanEnglishLine)
       .filter(Boolean)
@@ -80,10 +82,13 @@
 
     if (lines.length < expectedCount) return null;
 
-    // A Psalm row normally contains exactly the verses followed by its
-    // doxology. If upstream contributes another starred rubric, use only the
-    // Psalm-sized block expected by the Latin GABC source.
-    return lines.slice(0, expectedCount);
+    // The Psalm row should normally contain exactly the Psalm verses. If an
+    // upstream rubric happens to contribute another starred line, use the
+    // first contiguous Psalm-sized block rather than failing the whole score.
+    return {
+      verses: lines.slice(0, expectedCount),
+      gloria: lines.slice(expectedCount, expectedCount + 2),
+    };
   }
 
   function stripMarkup(text) {
@@ -292,26 +297,37 @@
   }
 
   function splitLatinVerse(line) {
-    const marker = line.indexOf(HALF_VERSE);
-    if (marker < 0) return null;
+    const marker = HALF_VERSE_PATTERN.exec(line);
+    if (!marker) return null;
 
-    let first = line.slice(0, marker).trim();
-    const second = line.slice(marker + HALF_VERSE.length).trim();
+    let first = line.slice(0, marker.index).trim();
+    const second = line.slice(marker.index + marker[0].length).trim();
     const clef = first.match(/^\s*(\([cf][1-4]\))/i)?.[1] || "";
     if (clef) first = first.slice(first.indexOf(clef) + clef.length).trim();
 
-    const responseLabel = first.match(/^\s*([VR]\/\.)\s*/i)?.[1] || "";
-    if (responseLabel) first = first.replace(/^\s*[VR]\/\.\s*/i, "");
-
-    const verseLabel = first.match(/^\s*(\d+[a-z]?[.)])\s*/i)?.[1] || "";
-    if (verseLabel) first = first.replace(/^\s*\d+[a-z]?[.)]\s*/i, "");
+    const label = first.match(/^\s*(\d+[a-z]?[.)])\s*/i)?.[1] || "";
+    if (label) first = first.replace(/^\s*\d+[a-z]?[.)]\s*/i, "");
 
     return {
       clef,
-      label: responseLabel || verseLabel,
+      label,
       first,
       second: second.replace(/\s*\(::\)\s*$/, "").trim(),
     };
+  }
+
+  function latinPsalmVerses(body) {
+    const chunks = body.split(/\s+(?=(?:\^\d+\.\^|[VR]\/\.)\(::\))/i);
+    const verses = [];
+
+    for (const chunk of chunks) {
+      if (/^[VR]\/\.\(::\)/i.test(chunk)) break;
+      const label = chunk.match(/^\^(\d+)\.\^\(::\)/)?.[1] || String(verses.length + 1);
+      const parsed = splitLatinVerse(chunk.replace(/^\^\d+\.\^\(::\)\s*/, ""));
+      if (parsed) verses.push({ ...parsed, label });
+    }
+
+    return verses;
   }
 
   function splitEnglishVerse(line) {
@@ -320,49 +336,60 @@
     return { first: halves[0].trim(), second: halves[1].trim() };
   }
 
-  function buildEnglishPsalmGabc(source, englishCell) {
-    if (!PSALM_HEADER.test(source)) return null;
+  function buildEnglishPsalmGabc(source, englishText) {
+    if (!PSALM_HEADER.test(source) || !PSALM_NAME.test(source)) return null;
     const split = splitSource(source);
     if (!split) return null;
 
-    // DO appends the tone-specific Gloria Patri GABC to the Psalm source.
-    // We deliberately include those lines here, so the English doxology is
-    // adapted to DO's actual doxology formula rather than being fabricated.
-    const latinLines = split.body
-      .split(/\n+/)
-      .map((line) => line.trim())
-      .filter((line) => line.includes(HALF_VERSE));
-
-    if (!latinLines.length) return null;
-    const englishLines = englishPsalmLines(englishCell, latinLines.length);
-    if (!englishLines) return null;
+    const latinVerses = latinPsalmVerses(split.body);
+    if (!latinVerses.length) return null;
+    const english = englishPsalmLines(englishText, latinVerses.length);
+    if (!english) return null;
 
     const rendered = [];
+    let firstTone = null;
+    let secondTone = null;
 
-    for (let index = 0; index < latinLines.length; index += 1) {
-      const latin = splitLatinVerse(latinLines[index]);
-      const english = splitEnglishVerse(englishLines[index]);
-      if (!latin || !english) return null;
+    for (let index = 0; index < latinVerses.length; index += 1) {
+      const latin = latinVerses[index];
+      const englishVerse = splitEnglishVerse(english.verses[index]);
+      if (!englishVerse) return null;
 
       const firstTemplate = toneTemplate(latin.first);
       const secondTemplate = toneTemplate(latin.second);
       if (!firstTemplate || !secondTemplate) return null;
 
-      const first = composeHalf(english.first, firstTemplate, index === 0);
-      const second = composeHalf(english.second, secondTemplate, false);
+      if (!firstTone) firstTone = firstTemplate;
+      if (!secondTone) secondTone = secondTemplate;
+
+      const first = composeHalf(englishVerse.first, firstTemplate, index === 0);
+      const second = composeHalf(englishVerse.second, secondTemplate, false);
       if (!first || !second) return null;
 
-      const label = index === 0 ? "" : `${latin.label || `${index + 1}.`} `;
+      const label = index === 0 ? "" : `^${latin.label}.^(::) `;
       const clef = index === 0 ? (latin.clef || "(c4)") : "";
       rendered.push(`${label}${clef}${first} ${HALF_VERSE} ${second} (::)`);
     }
 
+    if (firstTone && secondTone) {
+      for (const gloriaLine of english.gloria) {
+        const gloria = splitEnglishVerse(gloriaLine);
+        if (!gloria) continue;
+        const first = composeHalf(gloria.first, firstTone, false);
+        const second = composeHalf(gloria.second, secondTone, false);
+        if (first && second) rendered.push(`${first} ${HALF_VERSE} ${second} (::)`);
+      }
+    }
+
     const tone = headerValue(source, "annotation");
     const userNotes = headerValue(source, "user-notes");
-    const header = split.header.replace(
-      /user-notes:\s*Psalm[^;]*;/i,
-      `user-notes: ${userNotes || "Psalm"} · English;`,
-    );
+    let header = split.header
+      .replace(/centering-scheme:\s*latin\s*;/i, "centering-scheme: english;")
+      .replace(/user-notes:\s*Psalm[^;]*;/i, `user-notes: ${userNotes || "Psalm"} · English;`);
+
+    if (!/centering-scheme:/i.test(header)) {
+      header = header.replace(HEADER_END, `centering-scheme: english;\n${HEADER_END}`);
+    }
 
     return {
       gabc: `${header}\n${rendered.join("\n")}`,
@@ -417,11 +444,12 @@
     addStyles();
 
     function patchedCreateMappings(context, source, ...rest) {
-      if (currentLanguage() === CHANT_LANGUAGE && PSALM_HEADER.test(source)) {
+      if (currentLanguage() === CHANT_LANGUAGE && PSALM_HEADER.test(source) && PSALM_NAME.test(source)) {
         try {
           const gabcElement = findGabcElement(source);
           const englishCell = siblingEnglishCell(gabcElement);
-          const adapted = buildEnglishPsalmGabc(source, englishCell);
+          const englishText = englishCell?.innerText || englishCell?.textContent || "";
+          const adapted = buildEnglishPsalmGabc(source, englishText);
 
           if (adapted?.gabc && gabcElement && englishCell) {
             markEnglishPsalmRow(gabcElement, englishCell, adapted.tone);
@@ -439,5 +467,12 @@
     window.exsurge.Gabc.createMappingsFromSource = patchedCreateMappings;
   }
 
-  install();
+  globalThis.EnglishPsalmChantTest = {
+    buildEnglishPsalmGabc,
+    englishPsalmLines,
+    latinPsalmVerses,
+    syllabifyWord,
+  };
+
+  if (typeof document !== "undefined" && typeof window !== "undefined") install();
 })();
