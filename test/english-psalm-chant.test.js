@@ -42,7 +42,8 @@ test("uses DO's English verses and English Gloria Patri with the selected tone",
   assert.match(result.gabc, /Glo\(.*Fat\(.*her/);
   assert.match(result.gabc, /be\(.*gin\(.*world\(.*end/);
   assert.doesNotMatch(result.gabc, /Dó\(f\)mi/);
-  assert.equal((result.gabc.match(/greheightstar/g) || []).length, 4);
+  assert.equal((result.gabc.match(/\*\(:\)/g) || []).length, 4);
+  assert.doesNotMatch(result.gabc, /greheightstar|<v>/);
 });
 
 test("keeps antiphons and non-Psalm canticles out of the English adapter", () => {
