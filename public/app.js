@@ -9,8 +9,9 @@ const HOURS = [
   ["Completorium", "Compline", "Completas"],
 ];
 
-const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-English"]);
+const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-Latin", "Cantilenae-English"]);
 const CHANT_LANGUAGE = "Cantilenae-English";
+const CHANT_LANGUAGES = new Set(["Cantilenae-Latin", "Cantilenae-English"]);
 
 const SUPPLEMENTARY_PRAYERS = {
   ante: {
@@ -328,12 +329,12 @@ function renderChants() {
 
 function renderOfficeContent() {
   chantLayouts = [];
-  els.officeContent.classList.toggle("chant-mode", state.language === CHANT_LANGUAGE);
+  els.officeContent.classList.toggle("chant-mode", CHANT_LANGUAGES.has(state.language));
   els.officeContent.innerHTML = cleanMarkup(
     state.rawHtml,
     state.hour === "Matutinum" && state.lessonsOnly,
   );
-  if (state.language === CHANT_LANGUAGE) renderChants();
+  if (CHANT_LANGUAGES.has(state.language)) renderChants();
   renderSupplementaryPrayers();
 }
 
