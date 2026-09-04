@@ -63,6 +63,7 @@
       .replace(/^\s*(?:Psalm\s+\d+[.:]?\s*)/i, "")
       .replace(/^\s*\d{1,3}:\d+[a-z]?\s+/i, "")
       .replace(/^\s*\d+[a-z]?[.)]\s+/i, "")
+      .replace(/^\s*(?:V\/?\.|R\/?\.|℣\.|℟\.)\s*/i, "")
       .replace(/\s+/g, " ")
       .trim();
   }
@@ -79,9 +80,9 @@
 
     if (lines.length < expectedCount) return null;
 
-    // The Psalm row should normally contain exactly the Psalm verses. If an
-    // upstream rubric happens to contribute another starred line, use the
-    // first contiguous Psalm-sized block rather than failing the whole score.
+    // A Psalm row normally contains exactly the verses followed by its
+    // doxology. If upstream contributes another starred rubric, use only the
+    // Psalm-sized block expected by the Latin GABC source.
     return lines.slice(0, expectedCount);
   }
 
@@ -299,12 +300,15 @@
     const clef = first.match(/^\s*(\([cf][1-4]\))/i)?.[1] || "";
     if (clef) first = first.slice(first.indexOf(clef) + clef.length).trim();
 
-    const label = first.match(/^\s*(\d+[a-z]?[.)])\s*/i)?.[1] || "";
-    if (label) first = first.replace(/^\s*\d+[a-z]?[.)]\s*/i, "");
+    const responseLabel = first.match(/^\s*([VR]\/\.)\s*/i)?.[1] || "";
+    if (responseLabel) first = first.replace(/^\s*[VR]\/\.\s*/i, "");
+
+    const verseLabel = first.match(/^\s*(\d+[a-z]?[.)])\s*/i)?.[1] || "";
+    if (verseLabel) first = first.replace(/^\s*\d+[a-z]?[.)]\s*/i, "");
 
     return {
       clef,
-      label,
+      label: responseLabel || verseLabel,
       first,
       second: second.replace(/\s*\(::\)\s*$/, "").trim(),
     };
@@ -321,6 +325,9 @@
     const split = splitSource(source);
     if (!split) return null;
 
+    // DO appends the tone-specific Gloria Patri GABC to the Psalm source.
+    // We deliberately include those lines here, so the English doxology is
+    // adapted to DO's actual doxology formula rather than being fabricated.
     const latinLines = split.body
       .split(/\n+/)
       .map((line) => line.trim())
@@ -331,8 +338,6 @@
     if (!englishLines) return null;
 
     const rendered = [];
-    let firstTone = null;
-    let secondTone = null;
 
     for (let index = 0; index < latinLines.length; index += 1) {
       const latin = splitLatinVerse(latinLines[index]);
@@ -343,9 +348,6 @@
       const secondTemplate = toneTemplate(latin.second);
       if (!firstTemplate || !secondTemplate) return null;
 
-      if (!firstTone) firstTone = firstTemplate;
-      if (!secondTone) secondTone = secondTemplate;
-
       const first = composeHalf(english.first, firstTemplate, index === 0);
       const second = composeHalf(english.second, secondTemplate, false);
       if (!first || !second) return null;
@@ -355,28 +357,12 @@
       rendered.push(`${label}${clef}${first} ${HALF_VERSE} ${second} (::)`);
     }
 
-    if (firstTone && secondTone) {
-      const gloria = [
-        ["Glory be to the Father, and to the Son,", "and to the Holy Ghost."],
-        ["As it was in the beginning, is now, and ever shall be,", "world without end. Amen."],
-      ];
-
-      for (const [firstText, secondText] of gloria) {
-        const first = composeHalf(firstText, firstTone, false);
-        const second = composeHalf(secondText, secondTone, false);
-        if (first && second) rendered.push(`${first} ${HALF_VERSE} ${second} (::)`);
-      }
-    }
-
     const tone = headerValue(source, "annotation");
     const userNotes = headerValue(source, "user-notes");
-    let header = split.header
-      .replace(/centering-scheme:\s*latin\s*;/i, "centering-scheme: english;")
-      .replace(/user-notes:\s*Psalm[^;]*;/i, `user-notes: ${userNotes || "Psalm"} · English;`);
-
-    if (!/centering-scheme:/i.test(header)) {
-      header = header.replace(HEADER_END, `centering-scheme: english;\n${HEADER_END}`);
-    }
+    const header = split.header.replace(
+      /user-notes:\s*Psalm[^;]*;/i,
+      `user-notes: ${userNotes || "Psalm"} · English;`,
+    );
 
     return {
       gabc: `${header}\n${rendered.join("\n")}`,
