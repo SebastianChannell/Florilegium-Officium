@@ -2,7 +2,7 @@
   "use strict";
 
   const CHANT_LANGUAGE = "Cantilenae-English";
-  const HALF_VERSE = '<v>\\greheightstar</v>(:)';
+  const HALF_VERSE = "*(:)";
   const HALF_VERSE_PATTERN = /(?:<v>\\greheightstar<\/v>|\*)\(:\)/i;
   const PSALM_HEADER = /(?:^|\n)user-notes:\s*Psalm\b/im;
   const PSALM_NAME = /(?:^|\n)name:\s*\d[^;\n]*;/im;
