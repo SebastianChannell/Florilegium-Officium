@@ -10,8 +10,8 @@ const VERSIONS = {
 const LANGUAGE_PROFILES = new Map([
   ["English", { lang1: "Latin", lang2: "English" }],
   ["Espanol", { lang1: "Latin", lang2: "Espanol" }],
-  ["Cantilenae-Latin", { lang1: "Latin-gabc", lang2: "English" }],
   ["Cantilenae-English", { lang1: "Latin-gabc", lang2: "English" }],
+  ["Cantilenae-Sung", { lang1: "Latin-gabc", lang2: "English" }],
 ]);
 
 const HOURS = new Set([
