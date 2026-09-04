@@ -14,6 +14,13 @@ test("maps Cantilenae English to DO's GABC Latin and English columns", () => {
   });
 });
 
+test("maps the separate Latin sung mode without enabling English adaptation", () => {
+  assert.deepEqual(resolveLanguageProfile("Cantilenae-Latin"), {
+    lang1: "Latin-gabc",
+    lang2: "English",
+  });
+});
+
 test("keeps the existing bilingual language profiles", () => {
   assert.deepEqual(resolveLanguageProfile("English"), { lang1: "Latin", lang2: "English" });
   assert.deepEqual(resolveLanguageProfile("Espanol"), { lang1: "Latin", lang2: "Espanol" });
