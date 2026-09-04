@@ -14,8 +14,8 @@ test("maps Cantilenae English to DO's GABC Latin and English columns", () => {
   });
 });
 
-test("maps the separate Latin sung mode without enabling English adaptation", () => {
-  assert.deepEqual(resolveLanguageProfile("Cantilenae-Latin"), {
+test("maps the separate English Psalm sung mode to the same DO source columns", () => {
+  assert.deepEqual(resolveLanguageProfile("Cantilenae-Sung"), {
     lang1: "Latin-gabc",
     lang2: "English",
   });
