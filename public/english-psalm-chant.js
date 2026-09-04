@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const CHANT_LANGUAGE = "Cantilenae-English";
+  const CHANT_LANGUAGE = "Cantilenae-Sung";
   const HALF_VERSE = "*(:)";
   const HALF_VERSE_PATTERN = /(?:<v>\\greheightstar<\/v>|\*)\(:\)/i;
   const PSALM_HEADER = /(?:^|\n)user-notes:\s*Psalm\b/im;
