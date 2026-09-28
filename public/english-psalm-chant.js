@@ -1,7 +1,10 @@
 (() => {
   "use strict";
 
-  const CHANT_LANGUAGE = "Cantilenae-Sung";
+  const SUNG_LANGUAGES = new Map([
+    ["Cantilenae-Sung", "English"],
+    ["Cantilenae-Ssung", "Español"],
+  ]);
   const HALF_VERSE = "*(:)";
   const HALF_VERSE_PATTERN = /(?:<v>\\greheightstar<\/v>|\*)\(:\)/i;
   const PSALM_HEADER = /(?:^|\n)user-notes:\s*Psalm\b/im;
@@ -62,7 +65,7 @@
   function cleanEnglishLine(line) {
     return line
       .replace(/\u00a0/g, " ")
-      .replace(/^\s*(?:Psalm\s+\d+[.:]?\s*)/i, "")
+      .replace(/^\s*(?:(?:Psalm|Salmo)\s+\d+[.:]?\s*)/i, "")
       .replace(/^\s*\d{1,3}:\d+[a-z]?\s+/i, "")
       .replace(/^\s*\d+[a-z]?[.)]\s+/i, "")
       .replace(/^\s*[℣℟][.]?\s*/u, "")
@@ -78,7 +81,7 @@
       .map(cleanEnglishLine)
       .filter(Boolean)
       .filter((line) => line.includes("*"))
-      .filter((line) => !/^(?:Ant\.|Antiphon|Psalm(?:us)?\b|Canticle\b)/i.test(line));
+      .filter((line) => !/^(?:Ant\.|Antiphon|Antífona|Psalm(?:us)?\b|Salmo\b|Canticle|Cántico)\b/i.test(line));
 
     if (lines.length < expectedCount) return null;
 
@@ -336,7 +339,7 @@
     return { first: halves[0].trim(), second: halves[1].trim() };
   }
 
-  function buildEnglishPsalmGabc(source, englishText) {
+  function buildEnglishPsalmGabc(source, englishText, language = "English") {
     if (!PSALM_HEADER.test(source) || !PSALM_NAME.test(source)) return null;
     const split = splitSource(source);
     if (!split) return null;
@@ -371,21 +374,15 @@
       rendered.push(`${label}${clef}${first} ${HALF_VERSE} ${second} (::)`);
     }
 
-    if (firstTone && secondTone) {
-      for (const gloriaLine of english.gloria) {
-        const gloria = splitEnglishVerse(gloriaLine);
-        if (!gloria) continue;
-        const first = composeHalf(gloria.first, firstTone, false);
-        const second = composeHalf(gloria.second, secondTone, false);
-        if (first && second) rendered.push(`${first} ${HALF_VERSE} ${second} (::)`);
-      }
-    }
+    // Keep the original Latin Gloria Patri and its notation as supplied by DO.
+    const gloriaStart = split.body.search(/\bV\/\.\(::\)/i);
+    if (gloriaStart >= 0) rendered.push(split.body.slice(gloriaStart));
 
     const tone = headerValue(source, "annotation");
     const userNotes = headerValue(source, "user-notes");
     let header = split.header
       .replace(/centering-scheme:\s*latin\s*;/i, "centering-scheme: english;")
-      .replace(/user-notes:\s*Psalm[^;]*;/i, `user-notes: ${userNotes || "Psalm"} · English;`);
+      .replace(/user-notes:\s*Psalm[^;]*;/i, `user-notes: ${userNotes || "Psalm"} · ${language};`);
 
     if (!/centering-scheme:/i.test(header)) {
       header = header.replace(HEADER_END, `centering-scheme: english;\n${HEADER_END}`);
@@ -397,7 +394,7 @@
     };
   }
 
-  function markEnglishPsalmRow(gabcElement, englishCell, tone) {
+  function markEnglishPsalmRow(gabcElement, englishCell, tone, language) {
     const latinCell = gabcElement?.closest("td, th");
     const row = latinCell?.closest("tr");
     if (!latinCell || !row || !englishCell) return;
@@ -412,8 +409,92 @@
 
     const label = document.createElement("div");
     label.className = "english-psalm-chant-label";
-    label.textContent = tone ? `English Psalm · Tone ${tone}` : "English Psalm";
+    label.textContent = tone ? `${language} Psalm · Tone ${tone}` : `${language} Psalm`;
     chantContainer.before(label);
+  }
+
+  function plainSegments(cell) {
+    if (!cell) return [];
+    const lines = [];
+    let line = "";
+    for (const node of cell.childNodes) {
+      if (node.nodeName === "BR") {
+        lines.push(line.replace(/\s+/g, " ").trim());
+        line = "";
+      } else {
+        line += node.textContent || "";
+      }
+    }
+    lines.push(line.replace(/\s+/g, " ").trim());
+    return lines;
+  }
+
+  function antiphonText(gabcElement, cell) {
+    const latinCell = gabcElement.closest("td, th");
+    const lines = plainSegments(cell);
+    const antiphons = lines.filter((line) => /^(?:Ant\.|Antífona\b)/i.test(line));
+    return antiphons[0]?.replace(/^(?:Ant\.|Antífona\b)\s*/i, "").replace(/\s*\*\s*/g, " ").trim() || "";
+  }
+
+  function isAntiphon(source) {
+    return /(?:^|\n)mode:\s*\d/i.test(source)
+      && !/(?:^|\n)office-part:\s*Hymnus/i.test(source)
+      && !PSALM_HEADER.test(source);
+  }
+
+  function buildSungAntiphonGabc(source, translation) {
+    if (!isAntiphon(source) || !translation) return null;
+    const split = splitSource(source);
+    if (!split) return null;
+    const clef = split.body.match(/^\s*(\([cf][1-4]\))/i)?.[1];
+    if (!clef) return null;
+    const groups = noteGroups(split.body);
+    if (!groups.length) return null;
+    const syllables = syllabifyPhrase(translation);
+    if (!syllables.length) return null;
+    // Follow the original neumes in order; keep the final cadence when the
+    // translation has a different number of syllables.
+    const notes = syllables.map((_, index) => {
+      if (index === syllables.length - 1) return groups.at(-1);
+      const sourceIndex = Math.floor(index * (groups.length - 1) / Math.max(1, syllables.length - 1));
+      return groups[sourceIndex];
+    });
+    const body = syllables.map((syllable, index) =>
+      `${syllable.wordStart && !syllable.phraseStart ? " " : ""}${safeLyric(syllable.text)}(${notes[index]})`
+    ).join("");
+    return `${split.header}\n${clef}${body} (::)`;
+  }
+
+  function chapterText(gabcElement, cell) {
+    const latinCell = gabcElement.closest("td, th");
+    if (!/(?:Capitulum|Lectio brevis)/i.test(latinCell?.textContent || "")) return "";
+    if (latinCell.querySelector(".GABC") !== gabcElement) return "";
+    const lines = plainSegments(cell);
+    const index = lines.findIndex((line) => /^(?:Chapter|Capítulo|Lectura breve)\b/i.test(line));
+    if (index < 0) return "";
+    const next = lines.slice(index + 1).findIndex((line) => /\b\d+:\d+\b/.test(line));
+    if (next < 0) return "";
+    return lines[index + next + 2]?.replace(/^\s*[℣℟][.]?\s*/, "") || "";
+  }
+
+  function buildSungChapterGabc(source, translation) {
+    if (!translation || !/\bR\/\.\(::\)/i.test(source) || PSALM_HEADER.test(source)) return null;
+    const split = splitSource(source);
+    const body = split?.body || source;
+    const responseIndex = body.search(/\bR\/\.\(::\)/i);
+    if (responseIndex < 0) return null;
+    const reading = body.slice(0, responseIndex);
+    const clef = reading.match(/^\s*(\([cf][1-4]\))/i)?.[1];
+    if (!clef) return null;
+    const template = toneTemplate(reading);
+    if (!template) return null;
+    const punctuation = translation.split(/(?<=[;:.])\s+/).filter(Boolean);
+    const adapted = punctuation.map((part, index) => {
+      const phrase = composeHalf(part, template, index === 0);
+      return phrase && `${phrase} ${index === punctuation.length - 1 ? "(::)" : "(;)"}`;
+    });
+    if (adapted.some((part) => !part)) return null;
+    return `${split?.header || ""}\n${clef}${adapted.join(" ")} ${body.slice(responseIndex)}`;
   }
 
   function addStyles() {
@@ -444,19 +525,29 @@
     addStyles();
 
     function patchedCreateMappings(context, source, ...rest) {
-      if (currentLanguage() === CHANT_LANGUAGE && PSALM_HEADER.test(source) && PSALM_NAME.test(source)) {
+      const language = SUNG_LANGUAGES.get(currentLanguage());
+      if (language) {
         try {
           const gabcElement = findGabcElement(source);
-          const englishCell = siblingEnglishCell(gabcElement);
-          const englishText = englishCell?.innerText || englishCell?.textContent || "";
-          const adapted = buildEnglishPsalmGabc(source, englishText);
-
-          if (adapted?.gabc && gabcElement && englishCell) {
-            markEnglishPsalmRow(gabcElement, englishCell, adapted.tone);
-            return createMappings.call(this, context, adapted.gabc, ...rest);
+          const translationCell = siblingEnglishCell(gabcElement);
+          if (gabcElement && translationCell) {
+            if (PSALM_HEADER.test(source) && PSALM_NAME.test(source)) {
+              const translation = translationCell.innerText || translationCell.textContent || "";
+              const adapted = buildEnglishPsalmGabc(source, translation, language);
+              if (adapted?.gabc) {
+                markEnglishPsalmRow(gabcElement, translationCell, adapted.tone, language);
+                return createMappings.call(this, context, adapted.gabc, ...rest);
+              }
+            } else if (isAntiphon(source)) {
+              const adapted = buildSungAntiphonGabc(source, antiphonText(gabcElement, translationCell));
+              if (adapted) return createMappings.call(this, context, adapted, ...rest);
+            } else if (!/Completorium/i.test(location.search)) {
+              const adapted = buildSungChapterGabc(source, chapterText(gabcElement, translationCell));
+              if (adapted) return createMappings.call(this, context, adapted, ...rest);
+            }
           }
         } catch (error) {
-          console.warn("English Psalm chant adaptation fell back to Latin.", error);
+          console.warn("Sung vernacular adaptation fell back to Latin.", error);
         }
       }
 
@@ -472,6 +563,8 @@
     englishPsalmLines,
     latinPsalmVerses,
     syllabifyWord,
+    buildSungAntiphonGabc,
+    buildSungChapterGabc,
   };
 
   if (typeof document !== "undefined" && typeof window !== "undefined") install();

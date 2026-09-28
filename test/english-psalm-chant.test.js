@@ -34,16 +34,33 @@ test("parses every Psalm verse from Divinum Officium's single-line GABC", () => 
   assert.equal(verses[1].label, "2");
 });
 
-test("uses DO's English verses and English Gloria Patri with the selected tone", () => {
+test("uses DO's English verses and retains the original Latin Gloria Patri notation", () => {
   const result = buildEnglishPsalmGabc(psalmSource, englishText);
   assert.ok(result);
   assert.equal(result.tone, "6.");
   assert.match(result.gabc, /The\(.*Lord\(/);
-  assert.match(result.gabc, /Glo\(.*Fat\(.*her/);
-  assert.match(result.gabc, /be\(.*gin\(.*world\(.*end/);
+  assert.match(result.gabc, /V\/\.\(::\) Gló\(h\)ri\(h\)a\(h\) Pa\(h\)tri/);
+  assert.match(result.gabc, /R\/\.\(::\) Sic\(h\)ut/);
   assert.doesNotMatch(result.gabc, /Dó\(f\)mi/);
   assert.equal((result.gabc.match(/\*\(:\)/g) || []).length, 4);
   assert.doesNotMatch(result.gabc, /greheightstar|<v>/);
+});
+
+test("uses Divinum Officium's Spanish Psalm lines without changing the Latin doxology", () => {
+  const spanish = `Salmo 98\n98:1 El Señor reina, tiemblen los pueblos: * sentado sobre querubines, se estremece la tierra.\n98:2 Grande es el Señor en Sion, * elevado sobre todos los pueblos.\n℣. Gloria al Padre * y al Hijo.\n℟. Como era en el principio * por los siglos. Amén.`;
+  const result = buildEnglishPsalmGabc(psalmSource, spanish, "Español");
+  assert.match(result.gabc, /El\(.*Se\(.*ñor\(/);
+  assert.match(result.gabc, /V\/\.\(::\) Gló\(h\)ri/);
+  assert.doesNotMatch(result.gabc, /Gloria al Padre/);
+});
+
+test("adapts an antiphon and a short reading to sung vernacular notation", () => {
+  const antiphon = `name: Jubilate Deo;\nmode: 7;\n%%\n(c3) Ju(e)bi(e)lá(g)te(h) De(i)o(i) in(f) vo(g)ce(f.) (::)`;
+  assert.match(globalThis.EnglishPsalmChantTest.buildSungAntiphonGabc(antiphon, "Shout unto God with joy."), /Shout\(/);
+  const chapter = `(c3) Be(h)á(h)tus(h) vir,(h) qui(h) suf(h)fert(h) ten(h)ta(h)ti(h)ó(h)nem:(f.) R/.(::) De(h)o(f) grá(e)ti(e)as.(ef..) (::)`;
+  const result = globalThis.EnglishPsalmChantTest.buildSungChapterGabc(chapter, "Blessed is the man who endureth temptation.");
+  assert.match(result, /Bles\(.*sed\(/);
+  assert.match(result, /R\/\.\(::\) De\(h\)o/);
 });
 
 test("keeps antiphons and non-Psalm canticles out of the English adapter", () => {

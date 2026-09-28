@@ -9,9 +9,8 @@ const HOURS = [
   ["Completorium", "Compline", "Completas"],
 ];
 
-const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-English", "Cantilenae-Sung"]);
-const CHANT_LANGUAGE = "Cantilenae-Sung";
-const CHANT_LANGUAGES = new Set(["Cantilenae-English", "Cantilenae-Sung"]);
+const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-English", "Cantilenae-Sung", "Cantilenae-Ssung"]);
+const CHANT_LANGUAGES = new Set(["Cantilenae-English", "Cantilenae-Sung", "Cantilenae-Ssung"]);
 
 const SUPPLEMENTARY_PRAYERS = {
   ante: {

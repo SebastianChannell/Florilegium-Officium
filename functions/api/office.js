@@ -12,6 +12,7 @@ const LANGUAGE_PROFILES = new Map([
   ["Espanol", { lang1: "Latin", lang2: "Espanol" }],
   ["Cantilenae-English", { lang1: "Latin-gabc", lang2: "English" }],
   ["Cantilenae-Sung", { lang1: "Latin-gabc", lang2: "English" }],
+  ["Cantilenae-Ssung", { lang1: "Latin-gabc", lang2: "Espanol" }],
 ]);
 
 const HOURS = new Set([
