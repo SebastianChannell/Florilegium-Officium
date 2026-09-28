@@ -338,7 +338,7 @@ function renderOfficeContent() {
 }
 
 function supplementaryPrayerMarkup(prayer) {
-  const language = state.language === "Espanol" ? "Espanol" : "English";
+  const language = ["Espanol", "Cantilenae-Ssung"].includes(state.language) ? "Espanol" : "English";
   const rows = prayer.latin.map((latin, index) => `
     <tr><td>${latin}</td><td>${prayer[language][index]}</td></tr>
   `).join("");
@@ -346,7 +346,7 @@ function supplementaryPrayerMarkup(prayer) {
 }
 
 function renderSupplementaryPrayers() {
-  const spanish = state.language === "Espanol";
+  const spanish = ["Espanol", "Cantilenae-Ssung"].includes(state.language);
   els.anteToggleLabel.textContent = spanish ? "Ante Officium · Antes" : "Ante Officium";
   els.postToggleLabel.textContent = spanish ? "Post Officium · Después" : "Post Officium";
   els.anteToggle.checked = state.showAnte;

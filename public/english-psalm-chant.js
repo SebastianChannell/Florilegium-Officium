@@ -76,22 +76,31 @@
   function englishPsalmLines(text, expectedCount) {
     if (!text || expectedCount < 1) return null;
 
-    const lines = text
-      .split(/\n+/)
-      .map(cleanEnglishLine)
-      .filter(Boolean)
-      .filter((line) => line.includes("*"))
-      .filter((line) => !/^(?:Ant\.|Antiphon|Antífona|Psalm(?:us)?\b|Salmo\b|Canticle|Cántico)\b/i.test(line));
-
+    const rawLines = text.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    const numbered = rawLines.filter((line) => /^\d{1,3}:\d+[a-z]?\s+/i.test(line));
+    const lines = numbered.length >= expectedCount
+      ? numbered.map(cleanEnglishLine)
+      : rawLines
+        .filter((line) => !/^(?:Ant\.|Antiphon\b|Antífona\b|Psalm(?:us)?\b|Salmo\b|Canticle\b|Cántico\b)/i.test(line))
+        .map(cleanEnglishLine)
+        .filter((line) => line.includes("*"));
     if (lines.length < expectedCount) return null;
 
-    // The Psalm row should normally contain exactly the Psalm verses. If an
-    // upstream rubric happens to contribute another starred line, use the
-    // first contiguous Psalm-sized block rather than failing the whole score.
     return {
-      verses: lines.slice(0, expectedCount),
-      gloria: lines.slice(expectedCount, expectedCount + 2),
+      verses: lines.slice(0, expectedCount).map(ensureHalfVerse),
+      gloria: rawLines.filter((line) => /^[℣℟][.]?\s*/u.test(line)).map(cleanEnglishLine).slice(0, 2),
     };
+  }
+
+  function ensureHalfVerse(line) {
+    if (line.includes("*")) return line;
+    // Some DO Spanish verse lines have no asterisk. Use a clause boundary;
+    // otherwise divide the words near the middle to keep both chant halves.
+    const clause = line.match(/^(.+?[,;:])\s+(.+)$/);
+    if (clause) return `${clause[1]} * ${clause[2]}`;
+    const words = line.split(/\s+/);
+    const middle = Math.max(1, Math.floor(words.length / 2));
+    return `${words.slice(0, middle).join(" ")} * ${words.slice(middle).join(" ")}`;
   }
 
   function stripMarkup(text) {

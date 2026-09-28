@@ -54,6 +54,16 @@ test("uses Divinum Officium's Spanish Psalm lines without changing the Latin dox
   assert.doesNotMatch(result.gabc, /Gloria al Padre/);
 });
 
+test("does not sing the antiphon as a Psalm verse and handles Spanish verses without a star", () => {
+  const spanish = `Salmos\nAnt. Alabad a Dios * con voz de júbilo.\nSalmo 98\n98:1 Pueblos todos, batid palmas, * aclamad a Dios con gritos de júbilo.\n98:2 Por la mañana te expongo mi causa, y me quedo aguardando.\n℣. Gloria al Padre * y al Hijo.`;
+  const parsed = englishPsalmLines(spanish, 2);
+  assert.match(parsed.verses[0], /^Pueblos todos/);
+  assert.match(parsed.verses[1], /mi causa, \* y me quedo/);
+  const result = buildEnglishPsalmGabc(psalmSource, spanish, "Español");
+  assert.match(result.gabc, /Pueb\(/);
+  assert.doesNotMatch(result.gabc, /Ala\(/);
+});
+
 test("adapts an antiphon and a short reading to sung vernacular notation", () => {
   const antiphon = `name: Jubilate Deo;\nmode: 7;\n%%\n(c3) Ju(e)bi(e)lá(g)te(h) De(i)o(i) in(f) vo(g)ce(f.) (::)`;
   assert.match(globalThis.EnglishPsalmChantTest.buildSungAntiphonGabc(antiphon, "Shout unto God with joy."), /Shout\(/);
