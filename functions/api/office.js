@@ -3,6 +3,7 @@ const ORIGIN = "https://divinum-officium-833566975684.us-east1.run.app";
 const VERSIONS = {
   "1939": "Divino Afflatu - 1939",
   "1954": "Divino Afflatu - 1954",
+  "1954-bvm": "Divino Afflatu - 1954",
   "1955": "Reduced - 1955",
   "1960": "Rubrics 1960 - 1960",
 };
@@ -97,7 +98,9 @@ export function correctKnownUpstreamDefects(html, { isoDate, hour }) {
 
 export async function onRequestGet({ request }) {
   const incoming = new URL(request.url);
-  const version = VERSIONS[incoming.searchParams.get("version") || "1954"];
+  const selectedVersion = incoming.searchParams.get("version") || "1954";
+  const version = VERSIONS[selectedVersion];
+  const votive = selectedVersion === "1954-bvm" ? "C12" : "Hodie";
   const hour = incoming.searchParams.get("hour") || "Laudes";
   const isoDate = incoming.searchParams.get("date");
   const date = toDoDate(isoDate);
@@ -114,7 +117,7 @@ export async function onRequestGet({ request }) {
   upstream.searchParams.set("version", version);
   upstream.searchParams.set("lang1", languageProfile.lang1);
   upstream.searchParams.set("lang2", languageProfile.lang2);
-  upstream.searchParams.set("votive", "Hodie");
+  upstream.searchParams.set("votive", votive);
   upstream.searchParams.set("dioecesis", "Generale");
   upstream.searchParams.set("testmode", "regular");
   upstream.searchParams.set("content", "1");
@@ -135,7 +138,7 @@ export async function onRequestGet({ request }) {
   }
 
   const upstreamHtml = await response.text();
-  const html = language === "English"
+  const html = language === "English" && votive === "Hodie"
     ? correctKnownUpstreamDefects(upstreamHtml, { isoDate, hour })
     : upstreamHtml;
   return Response.json(

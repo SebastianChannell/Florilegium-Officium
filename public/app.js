@@ -86,7 +86,7 @@ const savedDateControlsExpanded = localStorage.getItem("officium.dateControlsExp
 const state = {
   date: validIsoDate(params.get("date")) ? params.get("date") : todayIso(),
   hour: HOURS.some(([value]) => value === params.get("hour")) ? params.get("hour") : savedHour,
-  version: ["1939", "1954", "1955", "1960"].includes(params.get("version"))
+  version: ["1939", "1954", "1954-bvm", "1955", "1960"].includes(params.get("version"))
     ? params.get("version")
     : savedVersion,
   language: LANGUAGES.has(params.get("lang"))

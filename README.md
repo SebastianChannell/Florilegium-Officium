@@ -17,6 +17,7 @@ The proxy currently points to:
 
 - Divino Afflatu — 1939
 - Divino Afflatu — 1954
+- Little Office of the Blessed Virgin Mary — Divino Afflatu 1954 (`votive=C12`)
 - Reduced — 1955
 - Rubrics — 1960
 
