@@ -51,6 +51,25 @@ const SUPPLEMENTARY_PRAYERS = {
   },
 };
 
+const CONFITEOR_PRAYERS = {
+  title: { English: "Compline · Confiteor", Espanol: "Completas · Confiteor" },
+  latin: [
+    "<FONT COLOR=\"red\"><I>Confiteor</I></FONT><br>Confíteor Deo omnipoténti, beátæ Maríæ semper Vírgini, beáto Michaéli Archángelo, beáto Joánni Baptístæ, sanctis Apóstolis Petro et Paulo, et ómnibus Sanctis, quia peccávi nimis, cogitatióne, verbo et ópere: <FONT COLOR=\"red\"><I>(percutit sibi pectus)</I></FONT> mea culpa, mea culpa, mea máxima culpa. Ídeo precor beátam Maríam semper Vírginem, beátum Michaélem Archángelum, beátum Joánnem Baptístam, sanctos Apóstolos Petrum et Paulum, et omnes Sanctos, oráre pro me ad Dóminum Deum nostrum.",
+    "<FONT COLOR=\"red\"><I>Misereatur nostri</I></FONT><br>Misereátur nostri omnípotens Deus, et dimíssis peccátis nostris, perdúcat nos ad vitam ætérnam. Amen.",
+    "<FONT COLOR=\"red\"><I>Indulgentiam</I></FONT><br>Indulgéntiam, + absolutiónem et remissiónem peccatórum nostrórum tríbuat nobis omnípotens et miséricors Dóminus. Amen.",
+  ],
+  English: [
+    "<FONT COLOR=\"red\"><I>Confiteor</I></FONT><br>I confess to almighty God, to blessed Mary ever Virgin, to blessed Michael the Archangel, to blessed John the Baptist, to the holy Apostles Peter and Paul, and to all the Saints, that I have sinned exceedingly in thought, word and deed: <FONT COLOR=\"red\"><I>(strikes his breast)</I></FONT> through my fault, through my fault, through my most grievous fault. Therefore I beseech blessed Mary ever Virgin, blessed Michael the Archangel, blessed John the Baptist, the holy Apostles Peter and Paul, and all the Saints, to pray for me to the Lord our God.",
+    "<FONT COLOR=\"red\"><I>Misereatur nostri</I></FONT><br>May almighty God have mercy on us, forgive us our sins, and bring us to everlasting life. Amen.",
+    "<FONT COLOR=\"red\"><I>Indulgentiam</I></FONT><br>May the almighty + and merciful Lord grant us pardon, absolution and remission of our sins. Amen.",
+  ],
+  Espanol: [
+    "<FONT COLOR=\"red\"><I>Confiteor</I></FONT><br>Yo, pecador, me confieso a Dios todopoderoso, a la bienaventurada siempre Virgen María, al bienaventurado San Miguel Arcángel, al bienaventurado San Juan Bautista, a los bienaventurados apóstoles Pedro y Pablo, a todos los santos, que pequé gravemente con el pensamiento, palabra y obra: <FONT COLOR=\"red\"><I>(se golpea el pecho tres veces)</I></FONT> por mi culpa, por mi culpa, por mi grandísima culpa; por tanto, ruego a la bienaventurada siempre Virgen María, al bienaventurado San Miguel Arcángel, al bienaventurado San Juan Bautista, a los santos Apóstoles Pedro y Pablo, a todos los santos, que rueguen por mí a Dios, nuestro Señor.",
+    "<FONT COLOR=\"red\"><I>Misereatur nostri</I></FONT><br>Dios todopoderoso tenga misericordia de nosotros, perdone nuestros pecados, y nos lleve a la vida eterna. Amén.",
+    "<FONT COLOR=\"red\"><I>Indulgentiam</I></FONT><br>El Señor + todopoderoso, rico en misericordia, nos conceda la indulgencia, absolución y remisión de nuestros pecados. Amén.",
+  ],
+};
+
 const els = {
   weekday: document.querySelector("#weekday"),
   displayDate: document.querySelector("#displayDate"),
@@ -62,6 +81,10 @@ const els = {
   hourNav: document.querySelector("#hourNav"),
   matinsTools: document.querySelector("#matinsTools"),
   lessonsToggle: document.querySelector("#lessonsToggle"),
+  primeTools: document.querySelector("#primeTools"),
+  martyrologyToggle: document.querySelector("#martyrologyToggle"),
+  complineTools: document.querySelector("#complineTools"),
+  confiteorToggle: document.querySelector("#confiteorToggle"),
   anteToggle: document.querySelector("#anteToggle"),
   postToggle: document.querySelector("#postToggle"),
   anteToggleLabel: document.querySelector("#anteToggleLabel"),
@@ -94,6 +117,8 @@ const state = {
     : (LANGUAGES.has(savedLanguage) ? savedLanguage : "English"),
   fontSize: Math.min(24, Math.max(15, savedSize)),
   lessonsOnly: params.get("view") === "lessons",
+  martyrologyOnly: params.get("view") === "martyrology",
+  confiteorOnly: params.get("view") === "confiteor",
   showAnte: localStorage.getItem("officium.showAnte") === "true",
   showPost: localStorage.getItem("officium.showPost") === "true",
   rawHtml: "",
@@ -156,9 +181,12 @@ function renderHours() {
     button.addEventListener("click", () => {
       if (state.hour === value) return;
       state.hour = value;
+      state.lessonsOnly = false;
+      state.martyrologyOnly = false;
+      state.confiteorOnly = false;
       localStorage.setItem("officium.hour", value);
       renderHours();
-      renderMatinsTools();
+      renderHourTools();
       loadOffice(true);
     });
     els.hourNav.append(button);
@@ -239,7 +267,47 @@ function extractMatinsLessons(doc) {
   doc.body.append(lessonsTable);
 }
 
-function cleanMarkup(markup, lessonsOnly = false) {
+function extractPrimeMartyrology(doc) {
+  const rows = [...doc.querySelectorAll("table tr")];
+  const selected = [];
+  let started = false;
+  let sawPretiosa = false;
+
+  for (const row of rows) {
+    const text = normalizedText([row]);
+
+    if (!started) {
+      if (!/(Martyrologium|Martyrology|Martirologio)/i.test(text)) continue;
+      started = true;
+    } else if (/(De Officio Capituli|Office of the Chapter|Oficio del Capítulo)/i.test(text)) {
+      break;
+    }
+
+    selected.push(row.cloneNode(true));
+
+    if (/(Sancta María et omnes Sancti|Sancta Maria et omnes Sancti|Holy Mary and all the Saints|Santa María y todos los santos)/i.test(text)) {
+      sawPretiosa = true;
+    }
+
+    if (sawPretiosa && /\bAm[eé]n\b/i.test(text)) break;
+  }
+
+  if (!selected.length) return;
+
+  const table = document.createElement("table");
+  const body = document.createElement("tbody");
+  for (const row of selected) body.append(row);
+  table.append(body);
+
+  const heading = document.createElement("h2");
+  heading.textContent = state.language === "Espanol"
+    ? "Prima · Martirologio (1954)"
+    : "Prime · Martyrologium (1954)";
+
+  doc.body.replaceChildren(heading, table);
+}
+
+function cleanMarkup(markup, view = "") {
   if (!markup) return "";
   const doc = new DOMParser().parseFromString(markup, "text/html");
 
@@ -255,7 +323,8 @@ function cleanMarkup(markup, lessonsOnly = false) {
     if (!href.startsWith("#")) link.removeAttribute("href");
   });
 
-  if (lessonsOnly) extractMatinsLessons(doc);
+  if (view === "lessons") extractMatinsLessons(doc);
+  if (view === "martyrology") extractPrimeMartyrology(doc);
 
   return doc.body.innerHTML;
 }
@@ -326,14 +395,25 @@ function renderChants() {
   }
 }
 
+function confiteorMarkup() {
+  const language = ["Espanol", "Cantilenae-Ssung"].includes(state.language) ? "Espanol" : "English";
+  const rows = CONFITEOR_PRAYERS.latin.map((latin, index) =>
+    "<tr><td>" + latin + "</td><td>" + CONFITEOR_PRAYERS[language][index] + "</td></tr>"
+  ).join("");
+  return "<h2>" + CONFITEOR_PRAYERS.title[language] + "</h2><table><tbody>" + rows + "</tbody></table>";
+}
+
 function renderOfficeContent() {
   chantLayouts = [];
   els.officeContent.classList.toggle("chant-mode", CHANT_LANGUAGES.has(state.language));
-  els.officeContent.innerHTML = cleanMarkup(
-    state.rawHtml,
-    state.hour === "Matutinum" && state.lessonsOnly,
-  );
-  if (CHANT_LANGUAGES.has(state.language)) renderChants();
+
+  const view =
+    state.hour === "Matutinum" && state.lessonsOnly ? "lessons"
+      : state.hour === "Prima" && state.martyrologyOnly ? "martyrology"
+        : "";
+
+  els.officeContent.innerHTML = cleanMarkup(state.rawHtml, view);
+  if (CHANT_LANGUAGES.has(state.language) && !view) renderChants();
   renderSupplementaryPrayers();
 }
 
@@ -357,13 +437,29 @@ function renderSupplementaryPrayers() {
   els.postPrayer.innerHTML = state.showPost ? supplementaryPrayerMarkup(SUPPLEMENTARY_PRAYERS.post) : "";
 }
 
-function renderMatinsTools() {
+function renderHourTools() {
+  const spanish = ["Espanol", "Cantilenae-Ssung"].includes(state.language);
   const isMatins = state.hour === "Matutinum";
+  const isPrime = state.hour === "Prima";
+  const isCompline = state.hour === "Completorium";
+
   els.matinsTools.hidden = !isMatins;
   els.lessonsToggle.setAttribute("aria-pressed", String(isMatins && state.lessonsOnly));
-  els.lessonsToggle.textContent = state.language === "Espanol"
+  els.lessonsToggle.textContent = spanish
     ? (state.lessonsOnly ? "Maitines completos" : "Solo lecciones")
     : (state.lessonsOnly ? "Full Matins" : "Lessons only");
+
+  els.primeTools.hidden = !isPrime;
+  els.martyrologyToggle.setAttribute("aria-pressed", String(isPrime && state.martyrologyOnly));
+  els.martyrologyToggle.textContent = spanish
+    ? (state.martyrologyOnly ? "Prima completa" : "Martirologio")
+    : (state.martyrologyOnly ? "Full Prime" : "Martyrologium");
+
+  els.complineTools.hidden = !isCompline;
+  els.confiteorToggle.setAttribute("aria-pressed", String(isCompline && state.confiteorOnly));
+  els.confiteorToggle.textContent = spanish
+    ? (state.confiteorOnly ? "Completas completas" : "Confiteor")
+    : (state.confiteorOnly ? "Full Compline" : "Confiteor");
 }
 
 function syncUrl() {
@@ -373,6 +469,8 @@ function syncUrl() {
   url.searchParams.set("version", state.version);
   url.searchParams.set("lang", state.language);
   if (state.hour === "Matutinum" && state.lessonsOnly) url.searchParams.set("view", "lessons");
+  else if (state.hour === "Prima" && state.martyrologyOnly) url.searchParams.set("view", "martyrology");
+  else if (state.hour === "Completorium" && state.confiteorOnly) url.searchParams.set("view", "confiteor");
   else url.searchParams.delete("view");
   history.replaceState(null, "", url);
 }
@@ -396,15 +494,26 @@ async function loadOffice(scrollTop = false) {
 
   if (scrollTop) window.scrollTo({ top: 0, behavior: "auto" });
 
-  const query = new URLSearchParams({
-    date: state.date,
-    hour: state.hour,
-    version: state.version,
-    lang: state.language,
-  });
+  if (state.hour === "Completorium" && state.confiteorOnly) {
+    state.rawHtml = confiteorMarkup();
+    renderOfficeContent();
+    setStatus("");
+    return;
+  }
+
+  const isMartyrology = state.hour === "Prima" && state.martyrologyOnly;
+  const query = isMartyrology
+    ? new URLSearchParams({ date: state.date, lang: state.language })
+    : new URLSearchParams({
+        date: state.date,
+        hour: state.hour,
+        version: state.version,
+        lang: state.language,
+      });
 
   try {
-    const response = await fetch(`/api/office?${query}`, {
+    const endpoint = isMartyrology ? "/api/martyrology" : "/api/office";
+    const response = await fetch(`${endpoint}?${query}`, {
       signal: state.controller.signal,
       headers: { Accept: "application/json" },
     });
@@ -460,16 +569,36 @@ els.languageSelect.addEventListener("change", () => {
   localStorage.setItem("officium.language", state.language);
   renderDate();
   renderHours();
-  renderMatinsTools();
+  renderHourTools();
   loadOffice(true);
 });
 
 els.lessonsToggle.addEventListener("click", () => {
   state.lessonsOnly = !state.lessonsOnly;
-  renderMatinsTools();
+  state.martyrologyOnly = false;
+  state.confiteorOnly = false;
+  renderHourTools();
   syncUrl();
   renderOfficeContent();
   window.scrollTo({ top: 0, behavior: "auto" });
+});
+
+els.martyrologyToggle.addEventListener("click", () => {
+  state.martyrologyOnly = !state.martyrologyOnly;
+  state.lessonsOnly = false;
+  state.confiteorOnly = false;
+  renderHourTools();
+  syncUrl();
+  loadOffice(true);
+});
+
+els.confiteorToggle.addEventListener("click", () => {
+  state.confiteorOnly = !state.confiteorOnly;
+  state.lessonsOnly = false;
+  state.martyrologyOnly = false;
+  renderHourTools();
+  syncUrl();
+  loadOffice(true);
 });
 
 els.anteToggle.addEventListener("change", () => {
@@ -509,6 +638,6 @@ els.languageSelect.value = state.language;
 setDateControlsExpanded(savedDateControlsExpanded);
 applyFontSize();
 renderHours();
-renderMatinsTools();
+renderHourTools();
 renderSupplementaryPrayers();
 loadOffice();
