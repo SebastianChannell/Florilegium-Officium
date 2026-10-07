@@ -300,7 +300,7 @@ function extractPrimeMartyrology(doc) {
   table.append(body);
 
   const heading = document.createElement("h2");
-  heading.textContent = state.language === "Espanol"
+  heading.textContent = ["Espanol", "Cantilenae-Ssung"].includes(state.language)
     ? "Prima · Martirologio (1954)"
     : "Prime · Martyrologium (1954)";
 
@@ -425,16 +425,29 @@ function supplementaryPrayerMarkup(prayer) {
   return `<h2>${prayer.title[language]}</h2><table><tbody>${rows}</tbody></table>`;
 }
 
+function hasFocusedView() {
+  return (
+    (state.hour === "Matutinum" && state.lessonsOnly)
+    || (state.hour === "Prima" && state.martyrologyOnly)
+    || (state.hour === "Completorium" && state.confiteorOnly)
+  );
+}
+
 function renderSupplementaryPrayers() {
   const spanish = ["Espanol", "Cantilenae-Ssung"].includes(state.language);
+  const hideForFocusedView = hasFocusedView();
   els.anteToggleLabel.textContent = spanish ? "Ante Officium · Antes" : "Ante Officium";
   els.postToggleLabel.textContent = spanish ? "Post Officium · Después" : "Post Officium";
   els.anteToggle.checked = state.showAnte;
   els.postToggle.checked = state.showPost;
-  els.antePrayer.hidden = !state.showAnte;
-  els.postPrayer.hidden = !state.showPost;
-  els.antePrayer.innerHTML = state.showAnte ? supplementaryPrayerMarkup(SUPPLEMENTARY_PRAYERS.ante) : "";
-  els.postPrayer.innerHTML = state.showPost ? supplementaryPrayerMarkup(SUPPLEMENTARY_PRAYERS.post) : "";
+  els.antePrayer.hidden = hideForFocusedView || !state.showAnte;
+  els.postPrayer.hidden = hideForFocusedView || !state.showPost;
+  els.antePrayer.innerHTML = !hideForFocusedView && state.showAnte
+    ? supplementaryPrayerMarkup(SUPPLEMENTARY_PRAYERS.ante)
+    : "";
+  els.postPrayer.innerHTML = !hideForFocusedView && state.showPost
+    ? supplementaryPrayerMarkup(SUPPLEMENTARY_PRAYERS.post)
+    : "";
 }
 
 function renderHourTools() {
@@ -458,7 +471,7 @@ function renderHourTools() {
   els.complineTools.hidden = !isCompline;
   els.confiteorToggle.setAttribute("aria-pressed", String(isCompline && state.confiteorOnly));
   els.confiteorToggle.textContent = spanish
-    ? (state.confiteorOnly ? "Completas completas" : "Confiteor")
+    ? (state.confiteorOnly ? "Completas" : "Confiteor")
     : (state.confiteorOnly ? "Full Compline" : "Confiteor");
 }
 
