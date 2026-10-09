@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
+  "generatorVersion": 2,
   "source": {
-    "commit": "702a1b91dd08a7f04fd07eccee19c2eba6c501c3"
+    "commit": "897df3e513ebdbdaa7434fc6e2900f00b7093ff5"
   },
   "start": "2026-10-02",
   "end": "2027-01-06",
@@ -25,6 +26,5 @@
     "Vesperae",
     "Completorium"
   ],
-  "count": 6984,
-  "generatorVersion": 2
+  "count": 6984
 }
