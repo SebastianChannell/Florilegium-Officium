@@ -19,8 +19,15 @@ export async function getCloudRunIdToken(request, env, fetcher = fetch) {
   if (!env?.CF_ACCESS_CLIENT_ID || !env?.CF_ACCESS_CLIENT_SECRET) {
     throw new Error("Cloudflare Access service credentials are not configured");
   }
-  const localUrl = new URL(ACCESS_PATH, request.url);
-  const assertionResponse = await fetcher(localUrl.toString(), {
+  // Pages Functions calling back to the same Pages hostname may bypass Access
+  // or fail same-zone routing. Prefer a separate Access-protected Worker on a
+  // Worker Custom Domain, which Cloudflare supports for same-zone fetch().
+  const identityUrl = env.CF_ACCESS_IDENTITY_URL || new URL(ACCESS_PATH, request.url).toString();
+  if (env.CF_ACCESS_IDENTITY_URL &&
+      identityUrl !== "https://identity.sacrumflorilegium.com/assertion") {
+    throw new Error("Unexpected Cloudflare Access identity endpoint");
+  }
+  const assertionResponse = await fetcher(identityUrl, {
     headers: {
       "CF-Access-Client-Id": env.CF_ACCESS_CLIENT_ID,
       "CF-Access-Client-Secret": env.CF_ACCESS_CLIENT_SECRET,
