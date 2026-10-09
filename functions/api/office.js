@@ -139,7 +139,7 @@ export async function onRequestGet({ request, env }) {
       message.startsWith("Google security token exchange") ? "google-token-exchange" :
       message.startsWith("Google ID token generation") ? "google-id-token" :
       message.includes("credentials are not configured") ? "cloudflare-credentials" :
-      message.includes("Unexpected Cloudflare Access identity endpoint") ? "identity-url" :
+      (message.includes("Unexpected Cloudflare Access identity endpoint") || message.includes("Cloudflare identity endpoint URL is not configured")) ? "identity-url" :
       "identity-fetch";
     console.error("Officium authentication failure at stage:", stage);
     return Response.json({ error: "Officium authentication failed.", stage },
