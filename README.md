@@ -40,3 +40,5 @@ npm run verify:data
 ```
 
 The generator executes `Pofficium.pl` with the same options as the previous proxy and preserves DO's HTML and GABC. Liturgical rules and translations remain DO's; this project controls presentation.
+
+If DO returns a missing GABC score message, the affected section uses DO's plain Latin text for the same date, rubric and Hour. The other notation and the English translation remain intact. Verification rejects unresolved missing-score output.

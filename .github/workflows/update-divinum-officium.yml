@@ -44,7 +44,7 @@ jobs:
           date.setUTCDate(date.getUTCDate() + 60);
           const requiredEnd = date.toISOString().slice(0, 10);
           const today = new Date().toISOString().slice(0, 10);
-          const changed = manifest?.source.commit !== process.env.UPSTREAM_SHA || manifest.start > today || manifest.end < requiredEnd;
+          const changed = manifest?.generatorVersion !== 2 || manifest?.source.commit !== process.env.UPSTREAM_SHA || manifest.start > today || manifest.end < requiredEnd;
           appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed}\n`);
           JS
       - name: Install Perl requirements
@@ -65,7 +65,6 @@ jobs:
         if: steps.check.outputs.changed == 'true'
         run: npm run sync:offices -- --source "$RUNNER_TEMP/divinum-officium" --start "$(date -u -d '7 days ago' +%F)" --days 97 --force true
       - name: Verify data and reader
-        if: steps.check.outputs.changed == 'true'
         run: |
           npm test
           npm run verify:data

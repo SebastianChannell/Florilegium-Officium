@@ -4,6 +4,8 @@ import { mkdir, writeFile, readFile, rename, rm } from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { VERSIONS, LANGUAGES, HOURS, validDate } from "../functions/lib/static-office.js";
 
+import { MISSING_SCORE, restoreMissingChantText } from "./lib/chant-fallback.mjs";
+
 const run = promisify(execFile);
 const args = Object.fromEntries(process.argv.slice(2).reduce((pairs, value, i, all) => value.startsWith("--") ? [...pairs, [value.slice(2), all[i + 1]]] : pairs, []));
 const source = resolve(args.source || process.env.DIVINUM_OFFICIUM_SOURCE || "");
@@ -20,7 +22,7 @@ const end = new Date(`${start}T00:00:00Z`); end.setUTCDate(end.getUTCDate() + da
 const lastDate = end.toISOString().slice(0, 10);
 let previous;
 try { previous = JSON.parse(await readFile(join(output, "available.json"), "utf8")); } catch (error) { if (error.code !== "ENOENT") throw error; }
-if (!args.force && previous?.source.commit === commit && previous.start <= start && previous.end >= lastDate) {
+if (!args.force && previous?.generatorVersion === 2 && previous?.source.commit === commit && previous.start <= start && previous.end >= lastDate) {
   console.log("Upstream and generated range are current."); process.exit(0);
 }
 await rm(staging, { recursive: true, force: true });
@@ -39,8 +41,15 @@ async function worker() {
     const [lang1, lang2] = LANGUAGES[language];
     const parameters = [`command=pray${hour}`, `date1=${month}-${day}-${year}`, `version=${VERSIONS[version]}`, `lang1=${lang1}`, `lang2=${lang2}`, `votive=${version === "1954-bvm" ? "C12" : "Hodie"}`, "dioecesis=Generale", "testmode=regular", "content=1"];
     const { stdout, stderr } = await run("perl", [join(source, "web/cgi-bin/horas/Pofficium.pl"), ...parameters], { cwd: source, maxBuffer: 8 * 1024 * 1024, timeout: 90000 });
-    const html = stdout.replace(/^Content-type:[^\r\n]*\r?\n\r?\n/i, "");
+    let html = stdout.replace(/^Content-type:[^\r\n]*\r?\n\r?\n/i, "");
     if (stderr.trim() || !/<table\b/i.test(html) || !/<td\b/i.test(html) || /Software error:|Can't locate|Undefined subroutine/i.test(html)) throw new Error(`${date}/${version}/${language}/${hour}: invalid DO output ${stderr.slice(0, 500)}`);
+    if (MISSING_SCORE.test(html)) {
+      const plainParameters = parameters.map(parameter => parameter === "lang1=Latin-gabc" ? "lang1=Latin" : parameter);
+      const plain = await run("perl", [join(source, "web/cgi-bin/horas/Pofficium.pl"), ...plainParameters], { cwd: source, maxBuffer: 8 * 1024 * 1024, timeout: 90000 });
+      if (plain.stderr.trim()) throw new Error("DO chant fallback failed: " + plain.stderr);
+      html = restoreMissingChantText(html, plain.stdout);
+      if (MISSING_SCORE.test(html)) throw new Error("Unresolved missing notation");
+    }
     const directory = join(staging, version, language, date);
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, `${hour}.json`), JSON.stringify({ html, source: { repository: "https://github.com/DivinumOfficium/divinum-officium", commit }, date, version, language, hour }));
@@ -48,7 +57,7 @@ async function worker() {
   }
 }
 await Promise.all(Array.from({ length: concurrency }, worker));
-await writeFile(join(staging, "available.json"), JSON.stringify({ schemaVersion: 1, source: { commit }, start, end: lastDate, versions: Object.keys(VERSIONS), languages: Object.keys(LANGUAGES), hours: HOURS, count: tasks.length }, null, 2) + "\n");
+await writeFile(join(staging, "available.json"), JSON.stringify({ schemaVersion: 1, generatorVersion: 2, source: { commit }, start, end: lastDate, versions: Object.keys(VERSIONS), languages: Object.keys(LANGUAGES), hours: HOURS, count: tasks.length }, null, 2) + "\n");
 await rm(output, { recursive: true, force: true });
 await rename(staging, output);
 console.log(`Saved ${tasks.length} verified Hours from ${start} through ${lastDate}.`);
