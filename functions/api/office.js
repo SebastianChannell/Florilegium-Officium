@@ -123,13 +123,28 @@ export async function onRequestGet({ request, env }) {
   upstream.searchParams.set("testmode", "regular");
   upstream.searchParams.set("content", "1");
 
-  const response = await fetchDivinumOfficium(upstream.toString(), request, env, {
+  let response;
+  try {
+    response = await fetchDivinumOfficium(upstream.toString(), request, env, {
     headers: {
       Accept: "text/html,application/xhtml+xml",
       "User-Agent": "Florilegium-Officium/1.0",
     },
     redirect: "follow",
-  });
+    });
+  } catch (error) {
+    const message = String(error?.message || "Unknown authentication failure");
+    const stage = message.startsWith("Cloudflare Access assertion unavailable") ? "cloudflare-access-response" :
+      message.includes("assertion header missing") ? "cloudflare-access-assertion" :
+      message.startsWith("Google security token exchange") ? "google-token-exchange" :
+      message.startsWith("Google ID token generation") ? "google-id-token" :
+      message.includes("credentials are not configured") ? "cloudflare-credentials" :
+      message.includes("Unexpected Cloudflare Access identity endpoint") ? "identity-url" :
+      "identity-fetch";
+    console.error("Officium authentication failure at stage:", stage);
+    return Response.json({ error: "Officium authentication failed.", stage },
+      { status: 502, headers: { "Cache-Control": "no-store" } });
+  }
 
   if (!response.ok) {
     return Response.json(
