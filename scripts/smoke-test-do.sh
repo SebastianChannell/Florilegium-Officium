@@ -17,7 +17,25 @@ fetch_office() {
   local date="$3"
   local output="$4"
 
+  local auth_header=()
+  if [ "${DO_REQUIRE_AUTH:-false}" = "true" ]; then
+    # The canonical Cloud Run service URL must be the token audience,
+    # including when testing a tagged candidate revision.
+    if ! command -v gcloud >/dev/null 2>&1; then
+      echo "Google Cloud CLI is required for authenticated smoke tests." >&2
+      exit 1
+    fi
+    local token
+    token="$(gcloud auth print-identity-token --audiences="${DO_AUTH_AUDIENCE:?DO_AUTH_AUDIENCE required}")"
+    if [ -z "$token" ]; then
+      echo "Could not obtain Cloud Run identity token." >&2
+      exit 1
+    fi
+    auth_header=(-H "X-Serverless-Authorization: Bearer $token")
+  fi
+
   curl --fail --silent --show-error \
+    "${auth_header[@]}" \
     --retry 5 --retry-delay 2 --retry-all-errors \
     --get "$base_url/cgi-bin/horas/Pofficium.pl" \
     --data-urlencode "command=pray${hour}" \
