@@ -1,3 +1,4 @@
+import { fetchDivinumOfficium } from "../lib/google-cloud-auth.js";
 const ORIGIN = "https://divinum-officium-833566975684.us-east1.run.app";
 
 const LANGUAGE_PROFILES = new Map([
@@ -19,7 +20,7 @@ export function toDoDate(value) {
   return `${Number(month)}-${Number(day)}-${year}`;
 }
 
-export async function onRequestGet({ request }) {
+export async function onRequestGet({ request, env }) {
   const incoming = new URL(request.url);
   const isoDate = incoming.searchParams.get("date");
   const date = toDoDate(isoDate);
@@ -41,7 +42,7 @@ export async function onRequestGet({ request }) {
   upstream.searchParams.set("testmode", "regular");
   upstream.searchParams.set("content", "1");
 
-  const response = await fetch(upstream.toString(), {
+  const response = await fetchDivinumOfficium(upstream.toString(), request, env, {
     headers: {
       Accept: "text/html,application/xhtml+xml",
       "User-Agent": "Florilegium-Officium/1.0",
