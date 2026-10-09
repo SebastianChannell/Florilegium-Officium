@@ -10,7 +10,7 @@ read -r -p "Cloudflare Service Token Client ID: " CF_ID
 read -r -s -p "Cloudflare Service Token Client Secret (hidden): " CF_SECRET
 echo
 
-url="https://officium.sacrumflorilegium.com/api/_google-identity"
+url="https://identity.sacrumflorilegium.com/assertion"
 status=$(curl --silent --show-error --max-time 30 -D "$tmp/access.headers" -o "$tmp/access.body" -w '%{http_code}' \
   -H "CF-Access-Client-Id: $CF_ID" \
   -H "CF-Access-Client-Secret: $CF_SECRET" "$url") || { echo "FAIL: Cloudflare Access endpoint request failed."; exit 1; }
@@ -23,7 +23,7 @@ fi
 CF_ASSERTION=$(awk 'BEGIN{IGNORECASE=1} tolower($0) ~ /^x-officium-access-assertion:/ { sub(/^[^:]+:[[:space:]]*/, ""); sub(/\r$/, ""); print; exit }' "$tmp/access.headers")
 if [ -z "$CF_ASSERTION" ]; then
   echo "FAIL: Access route returned 204 but no signed assertion header."
-  echo "Check that Access injects Cf-Access-Jwt-Assertion into the protected Pages Function."
+  echo "Check that Access injects Cf-Access-Jwt-Assertion into the protected identity Worker."
   exit 1
 fi
 echo "PASS: Cloudflare Access returned a signed assertion."
