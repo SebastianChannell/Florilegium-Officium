@@ -22,9 +22,13 @@ export async function getCloudRunIdToken(request, env, fetcher = fetch) {
   // Pages Functions calling back to the same Pages hostname may bypass Access
   // or fail same-zone routing. Prefer a separate Access-protected Worker on a
   // Worker Custom Domain, which Cloudflare supports for same-zone fetch().
-  const identityUrl = env.CF_ACCESS_IDENTITY_URL || new URL(ACCESS_PATH, request.url).toString();
-  if (env.CF_ACCESS_IDENTITY_URL &&
-      identityUrl !== "https://identity.sacrumflorilegium.com/assertion") {
+  // Never fall back to the Pages self-fetch URL: it can silently target
+  // the wrong Access application and produce a misleading 401.
+  if (!env.CF_ACCESS_IDENTITY_URL) {
+    throw new Error("Cloudflare identity endpoint URL is not configured");
+  }
+  const identityUrl = env.CF_ACCESS_IDENTITY_URL;
+  if (identityUrl !== "https://identity.sacrumflorilegium.com/assertion") {
     throw new Error("Unexpected Cloudflare Access identity endpoint");
   }
   const assertionResponse = await fetcher(identityUrl, {
@@ -37,7 +41,7 @@ export async function getCloudRunIdToken(request, env, fetcher = fetch) {
   });
   if (assertionResponse.status !== 204) {
     // Non-sensitive diagnostic only: NEVER log assertion headers or service tokens.
-    console.error("Officium identity endpoint HTTP status:", assertionResponse.status);
+    console.error("Officium identity Worker HTTP status:", assertionResponse.status, "hostname:", new URL(identityUrl).hostname);
     const error = new Error("Cloudflare Access assertion unavailable");
     error.stage = "cloudflare-access-response";
     error.upstreamStatus = assertionResponse.status;
