@@ -20,7 +20,7 @@ env:
   GCP_SERVICE: divinum-officium
   PRODUCTION_URL: https://divinum-officium-833566975684.us-east1.run.app
   DO_AUTH_AUDIENCE: https://divinum-officium-833566975684.us-east1.run.app
-  DO_REQUIRE_AUTH: "true"
+  DO_REQUIRE_AUTH: "false" # enable only after granting do-updater roles/run.invoker and testing
 
 jobs:
   update:
