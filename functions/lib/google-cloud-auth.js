@@ -36,7 +36,12 @@ export async function getCloudRunIdToken(request, env, fetcher = fetch) {
     cache: "no-store",
   });
   if (assertionResponse.status !== 204) {
-    throw new Error(`Cloudflare Access assertion unavailable (${assertionResponse.status})`);
+    // Non-sensitive diagnostic only: NEVER log assertion headers or service tokens.
+    console.error("Officium identity endpoint HTTP status:", assertionResponse.status);
+    const error = new Error("Cloudflare Access assertion unavailable");
+    error.stage = "cloudflare-access-response";
+    error.upstreamStatus = assertionResponse.status;
+    throw error;
   }
   const assertion = assertionResponse.headers.get("X-Officium-Access-Assertion");
   if (!assertion) throw new Error("Cloudflare Access assertion header missing");
