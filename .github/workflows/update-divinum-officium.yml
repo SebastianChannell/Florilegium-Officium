@@ -19,6 +19,8 @@ env:
   GCP_REGION: us-east1
   GCP_SERVICE: divinum-officium
   PRODUCTION_URL: https://divinum-officium-833566975684.us-east1.run.app
+  DO_AUTH_AUDIENCE: https://divinum-officium-833566975684.us-east1.run.app
+  DO_REQUIRE_AUTH: "true"
 
 jobs:
   update:
