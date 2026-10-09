@@ -3,8 +3,8 @@
   "source": {
     "commit": "702a1b91dd08a7f04fd07eccee19c2eba6c501c3"
   },
-  "start": "2026-10-09",
-  "end": "2026-10-09",
+  "start": "2026-10-02",
+  "end": "2027-01-06",
   "versions": [
     "1954",
     "1960",
@@ -25,5 +25,5 @@
     "Vesperae",
     "Completorium"
   ],
-  "count": 72
+  "count": 6984
 }
