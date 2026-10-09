@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "sync:offices": "node scripts/generate-offices.mjs",
+    "verify:data": "node scripts/verify-offices.mjs",
+    "build": "npm run verify:data"
   }
 }

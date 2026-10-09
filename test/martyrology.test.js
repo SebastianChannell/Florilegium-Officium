@@ -15,18 +15,10 @@ test("Martyrology always uses plain Latin in the left column", () => {
     lang1: "Latin",
     lang2: "English",
   });
-  assert.deepEqual(resolveMartyrologyLanguageProfile("Cantilenae-Sung"), {
-    lang1: "Latin",
-    lang2: "English",
-  });
 });
 
 test("Martyrology follows the selected Spanish translation", () => {
   assert.deepEqual(resolveMartyrologyLanguageProfile("Espanol"), {
-    lang1: "Latin",
-    lang2: "Espanol",
-  });
-  assert.deepEqual(resolveMartyrologyLanguageProfile("Cantilenae-Ssung"), {
     lang1: "Latin",
     lang2: "Espanol",
   });

@@ -9,8 +9,8 @@ const HOURS = [
   ["Completorium", "Compline", "Completas"],
 ];
 
-const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-English", "Cantilenae-Sung", "Cantilenae-Ssung"]);
-const CHANT_LANGUAGES = new Set(["Cantilenae-English", "Cantilenae-Sung", "Cantilenae-Ssung"]);
+const LANGUAGES = new Set(["English", "Espanol", "Cantilenae-English"]);
+const CHANT_LANGUAGES = new Set(["Cantilenae-English"]);
 
 const SUPPLEMENTARY_PRAYERS = {
   ante: {
@@ -109,9 +109,9 @@ const savedDateControlsExpanded = localStorage.getItem("officium.dateControlsExp
 const state = {
   date: validIsoDate(params.get("date")) ? params.get("date") : todayIso(),
   hour: HOURS.some(([value]) => value === params.get("hour")) ? params.get("hour") : savedHour,
-  version: ["1939", "1954", "1954-bvm", "1955", "1960"].includes(params.get("version"))
+  version: ["1954", "1954-bvm", "1960"].includes(params.get("version"))
     ? params.get("version")
-    : savedVersion,
+    : (["1954", "1954-bvm", "1960"].includes(savedVersion) ? savedVersion : "1954"),
   language: LANGUAGES.has(params.get("lang"))
     ? params.get("lang")
     : (LANGUAGES.has(savedLanguage) ? savedLanguage : "English"),
@@ -300,7 +300,7 @@ function extractPrimeMartyrology(doc) {
   table.append(body);
 
   const heading = document.createElement("h2");
-  heading.textContent = ["Espanol", "Cantilenae-Ssung"].includes(state.language)
+  heading.textContent = state.language === "Espanol"
     ? "Prima · Martirologio (1954)"
     : "Prime · Martyrologium (1954)";
 
@@ -396,7 +396,7 @@ function renderChants() {
 }
 
 function confiteorMarkup() {
-  const language = ["Espanol", "Cantilenae-Ssung"].includes(state.language) ? "Espanol" : "English";
+  const language = state.language === "Espanol" ? "Espanol" : "English";
   const rows = CONFITEOR_PRAYERS.latin.map((latin, index) =>
     "<tr><td>" + latin + "</td><td>" + CONFITEOR_PRAYERS[language][index] + "</td></tr>"
   ).join("");
@@ -418,7 +418,7 @@ function renderOfficeContent() {
 }
 
 function supplementaryPrayerMarkup(prayer) {
-  const language = ["Espanol", "Cantilenae-Ssung"].includes(state.language) ? "Espanol" : "English";
+  const language = state.language === "Espanol" ? "Espanol" : "English";
   const rows = prayer.latin.map((latin, index) => `
     <tr><td>${latin}</td><td>${prayer[language][index]}</td></tr>
   `).join("");
@@ -434,7 +434,7 @@ function hasFocusedView() {
 }
 
 function renderSupplementaryPrayers() {
-  const spanish = ["Espanol", "Cantilenae-Ssung"].includes(state.language);
+  const spanish = state.language === "Espanol";
   const hideForFocusedView = hasFocusedView();
   els.anteToggleLabel.textContent = spanish ? "Ante Officium · Antes" : "Ante Officium";
   els.postToggleLabel.textContent = spanish ? "Post Officium · Después" : "Post Officium";
@@ -451,7 +451,7 @@ function renderSupplementaryPrayers() {
 }
 
 function renderHourTools() {
-  const spanish = ["Espanol", "Cantilenae-Ssung"].includes(state.language);
+  const spanish = state.language === "Espanol";
   const isMatins = state.hour === "Matutinum";
   const isPrime = state.hour === "Prima";
   const isCompline = state.hour === "Completorium";
@@ -532,7 +532,11 @@ async function loadOffice(scrollTop = false) {
     });
 
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+    if (!response.ok) {
+      const error = new Error(data.error || `Request failed (${response.status})`);
+      error.status = response.status;
+      throw error;
+    }
 
     state.rawHtml = data.html;
     renderOfficeContent();
@@ -540,6 +544,12 @@ async function loadOffice(scrollTop = false) {
   } catch (error) {
     if (error.name === "AbortError") return;
     console.error(error);
+    if (error.status === 404) {
+      setStatus(state.language === "Espanol"
+        ? "Esta fecha todavía no está disponible. Selecciona una fecha más cercana a hoy."
+        : "This date is outside the available range. Choose a date closer to today.", true);
+      return;
+    }
     setStatus(
       state.language === "Espanol"
         ? "No se pudo cargar el Oficio. Inténtalo de nuevo en un momento."

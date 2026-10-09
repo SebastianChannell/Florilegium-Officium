@@ -1,61 +1,42 @@
 # Florilegium Officium
 
-A mobile-first reader for the traditional Roman Divine Office. Divinum Officium remains the authoritative liturgical engine; this project provides a cleaner iPhone-first presentation layer.
+A mobile-first reader for the traditional Roman Divine Office. Like Propria, this site serves saved liturgical data generated directly by the official Divinum Officium Perl engine. No Google Cloud Run service or Google credentials are required.
 
-## Architecture
+## Options
 
-- **Divinum Officium backend:** Google Cloud Run
-- **Frontend:** static HTML/CSS/JavaScript
-- **Proxy:** Cloudflare Pages Function at `/api/office`
-- **Liturgical logic:** entirely delegated to Divinum Officium
-
-The proxy currently points to:
-
-`https://divinum-officium-833566975684.us-east1.run.app`
-
-## Supported rubrics
-
-- Divino Afflatu — 1939
-- Divino Afflatu — 1954
-- Little Office of the Blessed Virgin Mary — Divino Afflatu 1954 (`votive=C12`)
-- Reduced — 1955
+- Divino Afflatu — 1954 (the pre-1955 rubrics)
 - Rubrics — 1960
+- Little Office of the Blessed Virgin Mary — Divino Afflatu 1954 (`votive=C12`)
 
-Latin and English are displayed side by side.
+Language modes: Latin • English, Latin • Español, Cantilenæ • English.
 
-## Cloudflare Pages deployment
+The Hours, Matins lessons view, Confiteor supplement, and 1954 Martyrology supplement keep their existing presentation. The Martyrology uses the generated 1954 Prime in plain Latin and the selected translation.
 
-Create a Pages project from this GitHub repository and use:
+## Data and updates
 
-- **Production branch:** `main`
-- **Framework preset:** None
-- **Build command:** leave blank
-- **Build output directory:** `public`
+GitHub Actions checks `DivinumOfficium/divinum-officium` master at minute 17 of every hour. GitHub may delay scheduled runs. Unchanged upstream commits skip generation while at least 60 future days remain available. When needed, the workflow generates seven previous days and 90 days beginning today for every supported Hour, rubric, and language. New data replaces the old range only after generation succeeds; all saved Hours are verified before the workflow commits and pushes them. Cloudflare's Git integration deploys that commit.
 
-Cloudflare Pages automatically deploys the `functions/` directory as Pages Functions, so no separate Worker project is required.
+This rolling range keeps the complete Office collection within Cloudflare Pages' file limit. Dates outside the saved range return a clear 404; they do not contact a live backend. Upstream commit and coverage are recorded in `public/data/office/available.json`.
 
-After deployment, the frontend requests `/api/office`; the Pages Function fetches the requested Hour from the Cloud Run Divinum Officium instance with `content=1`, keeping DO responsible for occurrence, concurrence, commemorations, octaves, psalmody, lessons, collects, and all other liturgical decisions.
+## Cloudflare Pages
 
-The proxy also contains one narrowly scoped data repair for older backend images containing a malformed St. Zephyrinus common reference. On 25 August at Vespers, it supplies the omitted bilingual commemoration only when Divinum Officium declares that commemoration in the heading but fails to render it in the prayer section. Because this is a Simplex commemoration, the suffrage remains and supplies the final conclusion, matching the official Divinum Officium output.
+Keep the existing Git-connected Pages project:
 
-## Automatic backend updates
+- Production branch: `main`
+- Framework: None
+- Build command: leave blank (or `npm run build` to verify saved data)
+- Output directory: `public`
 
-The scheduled `Update Divinum Officium backend` workflow checks the official `ghcr.io/divinumofficium/divinum-officium:master` image at 12:17 a.m. and 12:17 p.m. Eastern time. Each update is first deployed to a zero-traffic candidate revision and tested across all supported rubrics. Production traffic moves only after the candidate passes. See [the Google Cloud authorization and update guide](docs/automatic-updates.md).
+`/api/office` and `/api/martyrology` read saved JSON through the Pages `ASSETS` binding. `_routes.json` limits Functions to those two endpoints. Google and Cloudflare Access identity settings from the previous backend setup are no longer used.
 
-## Design
+## Regenerate locally
 
-The interface is deliberately restrained and mobile first:
+Install Perl with CGI, URI and HTML::Parser, plus Node 20 or later. Clone the official DO repository, then run:
 
-- dark background `#070606`
-- purple accent `#8451CF`
-- compact horizontal Hour navigation
-- Matins-only lessons view for spiritual reading without psalms, responsories, or prayers
-- previous/next day controls
-- persistent rubric selection
-- adjustable reader text size
-- Latin/English parallel columns
-- installable PWA metadata for iPhone Home Screen use
+```sh
+npm run sync:offices -- --source /path/to/divinum-officium --start 2026-10-02 --days 97
+npm test
+npm run verify:data
+```
 
-## Principle
-
-**Divinum Officium decides what is prayed. Florilegium Officium decides how it is displayed.**
+The generator executes `Pofficium.pl` with the same options as the previous proxy and preserves DO's HTML and GABC. Liturgical rules and translations remain DO's; this project controls presentation.

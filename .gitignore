@@ -1,1 +1,4 @@
 gha-creds-*.json
+
+public/data/office.staging/
+node_modules/

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "commit": "702a1b91dd08a7f04fd07eccee19c2eba6c501c3"
+  },
+  "start": "2026-10-09",
+  "end": "2026-10-09",
+  "versions": [
+    "1954",
+    "1960",
+    "1954-bvm"
+  ],
+  "languages": [
+    "English",
+    "Espanol",
+    "Cantilenae-English"
+  ],
+  "hours": [
+    "Matutinum",
+    "Laudes",
+    "Prima",
+    "Tertia",
+    "Sexta",
+    "Nona",
+    "Vesperae",
+    "Completorium"
+  ],
+  "count": 72
+}

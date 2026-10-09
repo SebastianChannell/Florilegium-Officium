@@ -1,153 +1,87 @@
-name: Update Divinum Officium backend
+name: Sync Divinum Officium data
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-divinum-officium.yml'
+      - 'scripts/**'
+      - 'functions/**'
+      - 'public/app.js'
+      - 'public/index.html'
   schedule:
-    - cron: "17 0,12 * * *"
-      timezone: "America/New_York"
+    - cron: '17 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
-  group: divinum-officium-production
+  group: sync-office-data
   cancel-in-progress: false
 
-permissions:
-  contents: read
-  id-token: write
-
-env:
-  DO_IMAGE: ghcr.io/divinumofficium/divinum-officium:master
-  GCP_REGION: us-east1
-  GCP_SERVICE: divinum-officium
-  PRODUCTION_URL: https://divinum-officium-833566975684.us-east1.run.app
-  DO_AUTH_AUDIENCE: https://divinum-officium-833566975684.us-east1.run.app
-  DO_REQUIRE_AUTH: "false" # enable only after granting do-updater roles/run.invoker and testing
-
 jobs:
-  update:
-    name: Deploy and verify upstream
+  sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
+    timeout-minutes: 60
     steps:
-      - name: Check out Florilegium Officium
-        uses: actions/checkout@v7
-
-      - name: Check required repository variables
-        env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
-        run: |
-          set -euo pipefail
-          for name in PROJECT_ID PROVIDER SERVICE_ACCOUNT; do
-            if [ -z "${!name}" ]; then
-              echo "Missing required repository variable: $name" >&2
-              echo "See docs/automatic-updates.md for the one-time setup." >&2
-              exit 1
-            fi
-          done
-
-      - name: Read the current upstream commit
-        id: upstream
-        run: |
-          set -euo pipefail
-          upstream_sha="$(git ls-remote https://github.com/DivinumOfficium/divinum-officium.git refs/heads/master | awk '{print $1}')"
-          if ! printf '%s' "$upstream_sha" | grep -Eq '^[0-9a-f]{40}$'; then
-            echo "Could not resolve the Divinum Officium master commit." >&2
-            exit 1
-          fi
-          echo "sha=$upstream_sha" >> "$GITHUB_OUTPUT"
-          echo "short_sha=${upstream_sha:0:12}" >> "$GITHUB_OUTPUT"
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          project_id: ${{ vars.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
-
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v3
-
-      - name: Deploy a zero-traffic candidate
-        env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          UPSTREAM_SHA: ${{ steps.upstream.outputs.short_sha }}
+          node-version: 22
+      - name: Check upstream and coverage
+        id: check
         run: |
           set -euo pipefail
-          gcloud run deploy "$GCP_SERVICE" \
-            --project "$PROJECT_ID" \
-            --region "$GCP_REGION" \
-            --image "$DO_IMAGE" \
-            --no-traffic \
-            --tag do-candidate \
-            --update-labels "do-upstream=$UPSTREAM_SHA" \
-            --quiet
-
-      - name: Locate the candidate revision
-        id: candidate
-        env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          upstream_sha=$(git ls-remote https://github.com/DivinumOfficium/divinum-officium.git refs/heads/master | awk '{print $1}')
+          [[ "$upstream_sha" =~ ^[0-9a-f]{40}$ ]]
+          echo "sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+          UPSTREAM_SHA="$upstream_sha" node --input-type=module <<'JS'
+          import { readFileSync, appendFileSync } from 'node:fs';
+          let manifest;
+          try { manifest = JSON.parse(readFileSync('public/data/office/available.json', 'utf8')); } catch {}
+          const date = new Date();
+          date.setUTCDate(date.getUTCDate() + 60);
+          const requiredEnd = date.toISOString().slice(0, 10);
+          const today = new Date().toISOString().slice(0, 10);
+          const changed = manifest?.source.commit !== process.env.UPSTREAM_SHA || manifest.start > today || manifest.end < requiredEnd;
+          appendFileSync(process.env.GITHUB_OUTPUT, `changed=${changed}\n`);
+          JS
+      - name: Install Perl requirements
+        if: steps.check.outputs.changed == 'true'
         run: |
-          set -euo pipefail
-          candidate_url="$(
-            gcloud run services describe "$GCP_SERVICE" \
-              --project "$PROJECT_ID" \
-              --region "$GCP_REGION" \
-              --format=json |
-              node -e '
-                let input = "";
-                process.stdin.on("data", chunk => input += chunk);
-                process.stdin.on("end", () => {
-                  const service = JSON.parse(input);
-                  const candidate = service.status?.traffic?.find(item => item.tag === "do-candidate");
-                  if (candidate?.url && candidate?.revisionName) {
-                    process.stdout.write(`${candidate.url}\n${candidate.revisionName}`);
-                  }
-                });
-              '
-          )"
-          candidate_revision="$(printf '%s\n' "$candidate_url" | sed -n '2p')"
-          candidate_url="$(printf '%s\n' "$candidate_url" | sed -n '1p')"
-          if [ -z "$candidate_url" ] || [ -z "$candidate_revision" ]; then
-            echo "Cloud Run did not report the candidate URL and revision." >&2
-            exit 1
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libcgi-pm-perl liburi-perl libhtml-parser-perl
+      - name: Check out the checked upstream commit
+        if: steps.check.outputs.changed == 'true'
+        env:
+          UPSTREAM_SHA: ${{ steps.check.outputs.sha }}
+        run: |
+          git init "$RUNNER_TEMP/divinum-officium"
+          git -C "$RUNNER_TEMP/divinum-officium" remote add origin https://github.com/DivinumOfficium/divinum-officium.git
+          git -C "$RUNNER_TEMP/divinum-officium" fetch --depth 1 origin "$UPSTREAM_SHA"
+          git -C "$RUNNER_TEMP/divinum-officium" checkout --detach FETCH_HEAD
+      - name: Generate 90 days from the official engine
+        if: steps.check.outputs.changed == 'true'
+        run: npm run sync:offices -- --source "$RUNNER_TEMP/divinum-officium" --start "$(date -u -d '7 days ago' +%F)" --days 97 --force true
+      - name: Verify data and reader
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          npm test
+          npm run verify:data
+      - name: Commit verified data
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/data/office
+          if ! git diff --cached --quiet; then
+            git commit -m 'Refresh generated Divinum Officium Hours'
+            git push
           fi
-          echo "url=$candidate_url" >> "$GITHUB_OUTPUT"
-          echo "revision=$candidate_revision" >> "$GITHUB_OUTPUT"
-
-      - name: Test the candidate revision
+      - name: Record result
         env:
-          DO_BASE_URL: ${{ steps.candidate.outputs.url }}
-        run: bash ./scripts/smoke-test-do.sh
-
-      - name: Promote the verified revision
-        env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          CANDIDATE_REVISION: ${{ steps.candidate.outputs.revision }}
+          UPSTREAM_SHA: ${{ steps.check.outputs.sha }}
+          CHANGED: ${{ steps.check.outputs.changed }}
         run: |
-          set -euo pipefail
-          gcloud run services update-traffic "$GCP_SERVICE" \
-            --project "$PROJECT_ID" \
-            --region "$GCP_REGION" \
-            --to-revisions "$CANDIDATE_REVISION=100" \
-            --quiet
-
-      - name: Verify production
-        env:
-          DO_BASE_URL: ${{ env.PRODUCTION_URL }}
-        run: bash ./scripts/smoke-test-do.sh
-
-      - name: Record the deployed upstream version
-        env:
-          UPSTREAM_SHA: ${{ steps.upstream.outputs.sha }}
-          CANDIDATE_URL: ${{ steps.candidate.outputs.url }}
-        run: |
-          {
-            echo "### Divinum Officium update complete"
-            echo
-            echo "- Upstream commit: \`$UPSTREAM_SHA\`"
-            echo "- Candidate tested: $CANDIDATE_URL"
-            echo "- Revision promoted: \`${{ steps.candidate.outputs.revision }}\`"
-            echo "- Production: $PRODUCTION_URL"
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Upstream: $UPSTREAM_SHA; regeneration required: $CHANGED" >> "$GITHUB_STEP_SUMMARY"
