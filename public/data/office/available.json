@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "generatorVersion": 2,
   "source": {
-    "commit": "31d9e8b2e46aa38c63f7639e53582ffea8bd3a84"
+    "commit": "c37227411e399d842a790d3997cfad7bb5746375"
   },
-  "start": "2026-11-06",
-  "end": "2027-02-10",
+  "start": "2026-11-07",
+  "end": "2027-02-11",
   "versions": [
     "1954",
     "1960",
